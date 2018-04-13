@@ -11,4 +11,4 @@ pyulg
 ## Features
 
 ## License
-GLPv2
+GPLv2
