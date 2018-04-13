@@ -1,0 +1,5 @@
+eclipse.preferences.version=1
+encoding//src/analysis.py=utf-8
+encoding//src/testDelegate.py=utf-8
+encoding//src/test_graph.py=utf-8
+encoding//src/test_quadrotor_opengl_qt.py=utf-8
