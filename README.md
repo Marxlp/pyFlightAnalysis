@@ -1,7 +1,12 @@
 ## pyFlightAnalysis
 A tool written by python languge to visualization the log data
 
-## Installment
+## Libraries Based
+pyQt4
+pyqtgraph
+pyOpenGL
+pyulg
+## Installation
 
 ## Features
 
