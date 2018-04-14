@@ -2,12 +2,13 @@ from distutils.core import setup
 
 setup(
         name='pyFlightAnalysis',
-        version='1.0beta',
+        version='1.0b1',
         description='Flight log Data analysis visualization tool',
         long_description=open('README.md').read(),
         url='https://github.com/Marxlp/pyFlightAnalysis',
         author='Marx Liu',
         author_email='smartlazyman@gmail.com',
+        license='MIT',
         classifiers=[
             'Development Status :: 4 - Beta',
             'Intended Audience :: Science/Research',
@@ -16,6 +17,7 @@ setup(
             ],
         keywords='px4 log analysis',
         packages=['src'],
+        package_dir={'mypkg':'src'},
         install_requires=[
             "pyqtgraph >= 0.10.0",
             "numpy >= 1.0.0",
