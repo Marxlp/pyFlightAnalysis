@@ -43,8 +43,8 @@ Usage
 
 #### Literacy Tutorial:
 1. Open log file (currently only support .ulg filemat) by clicked ![open file][open_file]
-2. Choose data by using filter and double click to add it.
-  ![filter data][filter_data]
+2. Choose data by using filter ![filter data][filter_data]
+ and double click to add it.
 3. Change color or toggle visibility 
   ![change color or toggle visibility][modify_graph]
 4. Scroll the middle wheel of mouse to zoom, press down and drag to move the curve 
