@@ -1,0 +1,5 @@
+include LICENSE.txt
+include README.md 
+recursive-include images *
+recursive-include src/icons *
+recursive-include src/models *

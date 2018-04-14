@@ -1,4 +1,4 @@
-test*
+test/
 *.pyc
 .project
 .pydevproject

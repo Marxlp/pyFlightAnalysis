@@ -11,7 +11,8 @@ Installation
 There are two way to run pyFlightAnalysis
 
 #### Run from source 
-pyFlightAnalysis is based on pyqtgraph, pyOpenGL, pyulog besides generally used scientific packages like numpy, matplotlib etc. If you have installed these packages. You can download the source file 
+pyFlightAnalysis is based on pyqtgraph (which based on PyQt ), pyOpenGL, pyulog besides generally used scientific packages like numpy, matplotlib etc. If you have installed these packages. You can download the source file 
+
 ```bash
 # folder where you want put the source code
 git clone https://github.com/Marxlp/pyFlightAnalysis.git
@@ -20,6 +21,8 @@ python analysis.py
 ```
 
 #### Install and Run
+
+Due to PyQt4 is can't directly installed by pip, so you need install [PyQt4](https://riverbankcomputing.com/software/pyqt/download) by hands. If you use anaconda, it can be installed by `conda install pyqt`. PyQt5 can install directly from pip but only support python3.x. After install PyQt, you can
 ```bash
 # Install from pypi
 pip install pyFlightAnalysis
@@ -50,6 +53,18 @@ Usage
 4. Scroll the middle wheel of mouse to zoom, press down and drag to move the curve 
 5. Click ![show quadrotor][show_quadrotor] to show 3D viewer ( currently may not be robust) 
 6. Press ![play data][play_data] to play ( you'd better open the 3D viewer to show the animation)
+
+Issues
+------
+
+If you have install PyQt4 and pyqtgraph but with below error
+```bash
+ImportError: cannot import name QtOpenGL
+```
+try
+```bash
+sudo apt-get install python-qt4-gl
+```
  
 License
 -------

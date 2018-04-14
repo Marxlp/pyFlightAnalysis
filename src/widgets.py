@@ -1,6 +1,7 @@
 
 from __future__ import division
 import time
+import pkg_resources
 from OpenGL.raw.GL.VERSION.GL_1_1 import GL_SHININESS
 from pyqtgraph.Qt import QtCore,QtGui,QtOpenGL
 from objloader import WFObject
@@ -17,16 +18,20 @@ except ImportError:
 
 pyqtSignal = QtCore.pyqtSignal
 
+resource_package = __name__ 
+def get_source_name(file_path_name):
+    return pkg_resources.resource_filename(resource_package,file_path_name)  
+
 class QuadrotorWin(QtGui.QMainWindow):
     closed = pyqtSignal(bool)
     
     def __init__(self,*args,**kwargs):
         super(QuadrotorWin,self).__init__(*args,**kwargs)
         self.toolBar = self.addToolBar('showSetting')
-        self.trace_show = QtGui.QAction(QtGui.QIcon('./icons/trace.gif'),'show trace',self)
+        self.trace_show = QtGui.QAction(QtGui.QIcon(get_source_name('icons/trace.gif')),'show trace',self)
         self.trace_show.triggered.connect(self.callback_show_trace)
         self.trace_showed = False
-        self.vector_show = QtGui.QAction(QtGui.QIcon('./icons/rotor_vector.gif'),'show rotation speed vector',self)
+        self.vector_show = QtGui.QAction(QtGui.QIcon(get_source_name('icons/rotor_vector.gif')),'show rotation speed vector',self)
         self.vector_show.triggered.connect(self.callback_show_vector)
         self.vector_showed = False
         self.toolBar.addAction(self.trace_show)
@@ -45,19 +50,19 @@ class QuadrotorWin(QtGui.QMainWindow):
     
     def callback_show_trace(self):
         if self.trace_showed:
-            self.trace_show.setIcon(QtGui.QIcon("./icons/trace.gif"))
+            self.trace_show.setIcon(QtGui.QIcon(get_source_name('icons/trace.gif')))
             self.quadrotor_widget.trace_visible = False
         else:
-            self.trace_show.setIcon(QtGui.QIcon("./icons/trace_pressed.gif"))
+            self.trace_show.setIcon(QtGui.QIcon(get_source_name("icons/trace_pressed.gif")))
             self.quadrotor_widget.trace_visible = True
         self.trace_showed = not self.trace_showed
         
     def callback_show_vector(self):
         if self.vector_showed:
-            self.vector_show.setIcon(QtGui.QIcon("./icons/rotor_vector.gif"))
+            self.vector_show.setIcon(QtGui.QIcon(get_source_name("icons/rotor_vector.gif")))
             self.quadrotor_widget.vector_visible = False
         else:
-            self.vector_show.setIcon(QtGui.QIcon("./icons/rotor_vector_pressed.gif"))
+            self.vector_show.setIcon(QtGui.QIcon(get_source_name("icons/rotor_vector_pressed.gif")))
             self.quadrotor_widget.vector_visible = True
         self.vector_showed = not self.vector_showed
     
@@ -109,15 +114,15 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         
         # load model
         self.drone_base = WFObject()
-        self.drone_base.loadFile('./models/drone_base.obj')
+        self.drone_base.loadFile(get_source_name("models/drone_base.obj"))
         self.drone_propeller1 = WFObject()
-        self.drone_propeller1.loadFile('./models/drone_propeller1.obj')
+        self.drone_propeller1.loadFile(get_source_name("models/drone_propeller1.obj"))
         self.drone_propeller2 = WFObject()
-        self.drone_propeller2.loadFile('./models/drone_propeller2.obj')
+        self.drone_propeller2.loadFile(get_source_name("models/drone_propeller2.obj"))
         self.drone_propeller3 = WFObject()
-        self.drone_propeller3.loadFile('./models/drone_propeller3.obj')
+        self.drone_propeller3.loadFile(get_source_name("models/drone_propeller3.obj"))
         self.drone_propeller4 = WFObject()
-        self.drone_propeller4.loadFile('./models/drone_propeller4.obj')
+        self.drone_propeller4.loadFile(get_source_name("models/drone_propeller4.obj"))
         
         # Base Plane Size
         self.floor_size = (-100,100)

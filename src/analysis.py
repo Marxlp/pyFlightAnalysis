@@ -5,6 +5,8 @@ creator: Marx Liu
 
 from __future__ import division
 import sys
+import os
+import pkg_resources
 from collections import OrderedDict
 import random
 import numpy as np
@@ -32,7 +34,14 @@ try:
 except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
-    
+
+resource_package = __name__  
+
+def get_source_name(file_path_name):
+    return pkg_resources.resource_filename(resource_package,file_path_name)  
+
+basepath = os.path.dirname(__file__)
+
 class MainWindow(QtGui.QMainWindow):
     
     deletePressed = pyqtSignal(bool)
@@ -65,12 +74,12 @@ class MainWindow(QtGui.QMainWindow):
         self.main_widget.setLayout(self.mainlayout)
         # ToolBar
         self.toolbar = self.addToolBar('FileManager')
-        loadfile_action = QtGui.QAction(QtGui.QIcon('./icons/open.gif'),'Open log file',self)
+        loadfile_action = QtGui.QAction(QtGui.QIcon(get_source_name('icons/open.gif')),'Open log file',self)
         loadfile_action.setShortcut('Ctrl+O')
         loadfile_action.triggered.connect(self.callback_open_log_file)
         self.toolbar.addAction(loadfile_action)
         self.log_file_name = None
-        self.show_quadrotor_3d = QtGui.QAction(QtGui.QIcon('./icons/quadrotor.gif'),'show 3d viewer',self)
+        self.show_quadrotor_3d = QtGui.QAction(QtGui.QIcon(get_source_name('icons/quadrotor.gif')),'show 3d viewer',self)
         self.show_quadrotor_3d.setShortcut('Ctrl+Shift+Q')
         self.show_quadrotor_3d.triggered.connect(self.callback_show_quadrotor)
         self.toolbar.addAction(self.show_quadrotor_3d)
@@ -202,12 +211,12 @@ class MainWindow(QtGui.QMainWindow):
         self.current_factor = 500/1
         self.time_line_button_play = QtGui.QPushButton(self.time_line_frame)
         self.time_line_button_play.setEnabled(False)
-        self.time_line_button_play.setIcon(QtGui.QIcon("./icons/play.jpg"))
+        self.time_line_button_play.setIcon(QtGui.QIcon(get_source_name("icons/play.jpg")))
         self.time_line_play = False
         self.time_line_button_play.clicked.connect(self.callback_play_clicked)
         self.time_line_button_stop = QtGui.QPushButton(self.time_line_frame)
         self.time_line_button_stop.setEnabled(False)
-        self.time_line_button_stop.setIcon(QtGui.QIcon("./icons/stop.jpg"))
+        self.time_line_button_stop.setIcon(QtGui.QIcon(get_source_name("icons/stop.jpg")))
         self.time_line_button_stop.clicked.connect(self.callback_stop_clicked)
         self.time_line_layout.addWidget(self.time_line_button_play)
         self.time_line_layout.addWidget(self.time_line_button_stop)
@@ -289,7 +298,7 @@ class MainWindow(QtGui.QMainWindow):
         self.time_line_play = not self.time_line_play
         if self.log_file_name is not None:
             if self.time_line_play:
-                self.time_line_button_play.setIcon(QtGui.QIcon("./icons/pause.jpg"))
+                self.time_line_button_play.setIcon(QtGui.QIcon(get_source_name("icons/pause.jpg")))
                 self.time_line_button_stop.setEnabled(True)
                 if self.ROI_showed:
                     region = self.ROI_region.getRegion()
@@ -303,14 +312,14 @@ class MainWindow(QtGui.QMainWindow):
                 # start timer
                 self.timer.start(self.dt)
             else:
-                self.time_line_button_play.setIcon(QtGui.QIcon("./icons/play.jpg"))
+                self.time_line_button_play.setIcon(QtGui.QIcon(get_source_name("icons/play.jpg")))
                 self.time_line_button_stop.setEnabled(False)
                 self.timer.stop()
     
     def callback_stop_clicked(self):
         self.time_line_play = False
         self.timer.stop()
-        self.time_line_button_play.setIcon(QtGui.QIcon("./icons/play.jpg"))
+        self.time_line_button_play.setIcon(QtGui.QIcon(get_source_name("icons/play.jpg")))
         self.time_line_button_stop.setEnabled(False)
         self.time_slider.setValue(0)
         self.time_index = 0
@@ -360,13 +369,13 @@ class MainWindow(QtGui.QMainWindow):
         
     def callback_show_quadrotor(self):
         if self.quadrotor_widget_isshow:
-            self.show_quadrotor_3d.setIcon(QtGui.QIcon('./icons/quadrotor.gif'))
+            self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor.gif')))
             self.quadrotor_widget_isshow = not self.quadrotor_widget_isshow
             self.quadrotor_win.hide()
             self.update()
         else:
             self.quadrotor_widget_isshow = not self.quadrotor_widget_isshow
-            self.show_quadrotor_3d.setIcon(QtGui.QIcon('./icons/quadrotor_pressed.gif'))
+            self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor_pressed.gif')))
             splash = ThreadQDialog(self.quadrotor_win.quadrotor_widget,self.quadrotor_win)
             splash.run()
             self.quadrotor_win.show()
@@ -637,7 +646,7 @@ class MainWindow(QtGui.QMainWindow):
     def quadrotor_win_closed_event(self,closed):
         if closed:
             self.quadrotor_widget_isshow = not self.quadrotor_widget_isshow
-            self.show_quadrotor_3d.setIcon(QtGui.QIcon('./icons/quadrotor.gif'))
+            self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor.gif')))
 
 class ThreadQDialog(QtCore.QThread):
     def __init__(self,loading_widget,parent=None,*args,**kwargs):
