@@ -673,7 +673,6 @@ class Checkbox(QtGui.QCheckBox):
     def callback_stateChanged(self):
         self.sigStateChanged.emit(self)
 
-#class TableView(QtGui.QTableView):
 class TableView(QtGui.QTableWidget):    
     """
     A simple table to demonstrate the QComboBox delegate.
@@ -681,9 +680,11 @@ class TableView(QtGui.QTableWidget):
     def __init__(self, *args, **kwargs):
         QtGui.QTableView.__init__(self, *args, **kwargs)
         
-
-if __name__ == '__main__':
+def main():
     app = QtGui.QApplication(sys.argv)
     mainwin = MainWindow()
     mainwin.show()
     sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
