@@ -11,7 +11,7 @@ Installation
 There are two way to run pyFlightAnalysis
 
 #### Run from source 
-pyFlightAnalysis is based on pyQt4,pyqtgraph,pyOpenGL,pyulog except scipy. If you have install these packages. You can download the source file 
+pyFlightAnalysis is based on pyqtgraph, pyOpenGL, pyulog besides generally used scientific packages like numpy, matplotlib. If you have installed these packages. You can download the source file 
 ```bash
 # folder where you want put the source code
 git clone https://github.com/Marxlp/pyFlightAnalysis.git
