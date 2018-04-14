@@ -1,25 +1,21 @@
 
 from __future__ import division
 import time
-import sys
-from collections import namedtuple,OrderedDict
-import random
-from OpenGL.GL import *
-from OpenGL.GLUT import *
-from OpenGL.GLU import *
 from OpenGL.raw.GL.VERSION.GL_1_1 import GL_SHININESS
-from PyQt4 import QtCore,QtGui,QtOpenGL
-from PyQt4.Qt import pyqtSignal
+from pyqtgraph.Qt import QtCore,QtGui,QtOpenGL
 from objloader import WFObject
 import numpy as np
 
 try:
     from OpenGL.GL import *
+    from OpenGL.GLUT import *
+    from OpenGL.GLU import *
 except ImportError:
     app = QtGui.QApplication(sys.argv)
     QtGui.QMessageBox.critical(None,"OpenGL hellogl",
-                               "PyOpenGL must be installed to run this example.")
+                               "PyOpenGL must be installed to run this program.")
 
+pyqtSignal = QtCore.pyqtSignal
 
 class QuadrotorWin(QtGui.QMainWindow):
     closed = pyqtSignal(bool)
@@ -269,7 +265,6 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         gluPerspective(65.0,w/h,self.near,self.far)
-        print(w,h)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glTranslatef(0.0,0.0,-5.0)

@@ -4,21 +4,20 @@ creator: Marx Liu
 """
 
 from __future__ import division
-import time
 import sys
 from collections import OrderedDict
 import random
 import numpy as np
 from pyulog.core import ULog
-from PyQt4 import QtCore,QtGui 
+from pyqtgraph.Qt import QtCore,QtGui
 import pyqtgraph as pg
-from PyQt4.Qt import pyqtSignal, QPushButton
-
 from widgets import QuadrotorWin
 
 import pdb
+
 __version__ = '0.1.0'
 
+pyqtSignal = QtCore.pyqtSignal
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8

@@ -2,3 +2,4 @@ test*
 *.pyc
 .project
 .pydevproject
+.settings/
