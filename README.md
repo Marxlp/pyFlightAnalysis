@@ -53,8 +53,8 @@ License
 -------
 [MIT](https://github.com/Marxlp/pyFlightAnalysis/LICENSE)
 
-[open_file]: https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/open_file.png
-[filter_data]: https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/filter_data.gif
-[modify_graph]: https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/modify_graph.png
-[show_quadrotor]:https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/show_quadrotor.png
-[play_data]:https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/play_data.png
+[open_file]: https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/open_file.png
+[filter_data]: https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/filter_data.gif
+[modify_graph]: https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/modify_graph.png
+[show_quadrotor]:https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/show_quadrotor.png
+[play_data]:https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/play_data.jpg
