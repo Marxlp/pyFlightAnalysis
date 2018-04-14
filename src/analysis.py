@@ -92,7 +92,6 @@ class MainWindow(QtGui.QMainWindow):
         self.plotting_data_tableView.setSortingEnabled(False)
         self.plotting_data_tableView.horizontalHeader().setStretchLastSection(True)
         self.plotting_data_tableView.resizeColumnsToContents()
-        self.plotting_data_tableView.selectionChanged = self.callback_plotting_data_selectionChanged
         self.plotting_data_tableView.setColumnCount(3)
         self.plotting_data_tableView.setHorizontalHeaderLabels(['Label','Color','Visible'])
         self.id = 0
@@ -273,7 +272,6 @@ class MainWindow(QtGui.QMainWindow):
         return angles
         
     def callback_open_log_file(self):
-        print('In open log')
         from os.path import expanduser
         home_path = expanduser('~')
         filename = QtGui.QFileDialog.getOpenFileName(self,'Open Log File',home_path,'Log Files (*.ulg)')
@@ -347,7 +345,6 @@ class MainWindow(QtGui.QMainWindow):
             self.time_slider.setValue(int(dV * self.current_time)) 
             # update quadrotor position and attitude and motor speed
             indexes = map(self.getIndex,[self.time_stamp_position,self.time_stamp_attitude,self.time_stamp_output],[t,t,t])
-            print(indexes)
             state_data = [self.position_history[indexes[0]],
                           self.attitude_history[indexes[1]],self.output_history[indexes[2]]]
             self.quadrotorStateChanged.emit(state_data)
@@ -399,22 +396,13 @@ class MainWindow(QtGui.QMainWindow):
                             self.item_list_treeWidget.expandItem(
                                 QtGui.QTreeWidgetItem(param_name,[data_name[0],data_name[1],data_name[2]]))
                             
-    def callback_plotting_data_selectionChanged(self,selected,deselected):
-        """ """
-        if len(selected.indexes()) > 0:
-            for index in selected.indexes():
-                print(index.row())
-#       print(selection.size())
         
     def callback_graph_clicked(self,event):
         """ set the curve highlighted to be normal """
-        print('in graph clicked')
         if self.curve_clicked:
-            print('event:',event.modifiers())
             if event.modifiers() == QtCore.Qt.ControlModifier:
                 pass
             else:
-                print('no control')
                 for curve in self.curve_highlighted[:-1]:
                     curve.setShadowPen(pg.mkPen((200,200,200), width=1, cosmetic=True))
                 self.curve_highlighted = self.curve_highlighted[-1:]
@@ -448,7 +436,6 @@ class MainWindow(QtGui.QMainWindow):
         # Curve Color
         ## rgb + a
         color = [random.randint(0,255) for _ in range(3)] 
-        print(color)
         btn = ColorPushButton(self.id,self.plotting_data_tableView,color)
         btn.sigColorChanged.connect(self.callback_color_changed)
         self.plotting_data_tableView.setCellWidget(row,1,btn)
@@ -472,7 +459,6 @@ class MainWindow(QtGui.QMainWindow):
         # increase the id
         self.id += 1
         self.update_ROI_graph()
-        print('end double click')
     
     
     def callback_curve_clicked(self,curve):
@@ -483,7 +469,6 @@ class MainWindow(QtGui.QMainWindow):
         curve.setShadowPen(pg.mkPen((70,70,70), width=5, cosmetic=True))
         self.curve_highlighted.append(curve)
         self.plotting_data_tableView.setCurrentCell(ind,0)
-        print('curve clicked')
         
     def callback_del_plotting_data(self):
         """"""
@@ -499,7 +484,6 @@ class MainWindow(QtGui.QMainWindow):
     
     def callback_visible_changed(self,chk):
         """"""
-        print('in visible changed')
         state = True if chk.checkState() == QtCore.Qt.Checked else False
         ids = [item[5] for item in self.data_plotting]
         self.data_plotting[ids.index(chk.id)][3] = state
@@ -526,9 +510,13 @@ class MainWindow(QtGui.QMainWindow):
             self.data_plotting[ind][5] = self.id
             self.id += 1
         # remove curves in graph
+        items_to_be_removed = []
         for item in self.main_graph.items:
             if isinstance(item,pg.PlotDataItem):
-                self.main_graph.removeItem(item)
+                items_to_be_removed.append(item)
+        for item in items_to_be_removed:
+            self.main_graph.removeItem(item)
+
         self.main_graph.legend.scene().removeItem(self.main_graph.legend)
         self.main_graph.addLegend()
         # redraw curves
@@ -541,11 +529,8 @@ class MainWindow(QtGui.QMainWindow):
         
     def callback_clear_plotting_data(self):
         """"""
-        self.plotting_data_tableView.setRowCount(0)
         self.data_plotting = []
-        self.main_graph.legend.scene().removeItem(self.main_graph.legend)
-        self.main_graph.addLegend()
-        self.update_ROI_graph()
+        self.update_graph()
     
     def callback_graph_index_combobox_changed(self,index):
         """Add clicked item to Data plotting area"""
@@ -585,22 +570,18 @@ class MainWindow(QtGui.QMainWindow):
             self.ROI_showed = not self.ROI_showed
     
     def update_ROI_graph(self):
+        items_to_be_removed = []
         for item in self.detail_graph.items:
             if isinstance(item,pg.PlotDataItem):
-                self.detail_graph.removeItem(item)
+                items_to_be_removed.append(item)
+                
+        for item in items_to_be_removed:
+            self.detail_graph.removeItem(item)
+            
         items = self.main_graph.items
         for item in items:
             if isinstance(item,pg.PlotDataItem):
                 self.detail_graph.plot(item.xData,item.yData,pen=item.opts['pen'])
-                    
-    def callback_plotting_data_table_cell_clicked(self,row,column):
-        print('row:%s,column:%s'%(row,column))
-        
-    def callback_plotting_data_table_item_clicked(self,item):
-        print('clicked item:',item)
-    
-    def callback_plotting_data_table_entered(self,row,column):
-        print('Entered row:%s,column:%s'%(row,column))
         
     
     def load_data(self):

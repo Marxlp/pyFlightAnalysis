@@ -176,7 +176,7 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         self.animationTimer.timeout.connect(self.animate)
         self.animationTimer.start(25)
         
-
+    
     def minimumSizeHint(self):
         return QtCore.QSize(*self.window_size_minimum)
 
