@@ -3,6 +3,8 @@ pyFlightAnalysis
 
 A tool written by python to visualize the flight log data inspired by FlightGear. Other log analysis tools see [dev.px4.io](https://dev.px4.io/advanced-ulog-file-format.html)
 
+![pyFlightAnalysis GUI][https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/gui.png]
+
 Installation
 ------------
 
@@ -57,4 +59,4 @@ License
 [filter_data]: https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/filter_data.png
 [modify_graph]: https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/modify_graph.png
 [show_quadrotor]:https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/show_quadrotor.png
-[play_data]:https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/play_data.jpg
+[play_data]:https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/play_data.png
