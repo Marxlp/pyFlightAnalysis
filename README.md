@@ -1,7 +1,7 @@
 pyFlightAnalysis
 ================
 
-A tool written by python languge to visualize the flight log data inspired by FlightGear. Other log analysis tools see [dev.px4.io](https://dev.px4.io/advanced-ulog-file-format.html)
+A tool written by python to visualize the flight log data inspired by FlightGear. Other log analysis tools see [dev.px4.io](https://dev.px4.io/advanced-ulog-file-format.html)
 
 Installation
 ------------
@@ -40,16 +40,21 @@ Usage
 [Brief usage tutorial of pyFlightAnalysis](https://youtu.be/g05gXfujbFY)
 
 #### Literacy Tutorial:
-1. open log file (currently only support .ulg filemat) by clicked ![open file][open_file]
-2. choose data by using filter and double click to add it.
-  ![filter data][fileter_data]
-3. change color or toggle visibility 
+1. Open log file (currently only support .ulg filemat) by clicked ![open file][open_file]
+2. Choose data by using filter and double click to add it.
+  ![filter data][filter_data]
+3. Change color or toggle visibility 
   ![change color or toggle visibility][modify_graph]
-4. zoom and open the detail graph
-  ![zoom and detail][zoom_detail]
-5. show 3D viewer ( currently may not be robust) 
-  ![3D viewer][3d_viewer] 
-
+4. Scroll the middle wheel of mouse to zoom, press down and drag to move the curve 
+5. Click ![show quadrotor][show_quadrotor] to show 3D viewer ( currently may not be robust) 
+6. Press ![play data][play_data] to play ( you'd better open the 3D viewer to show the animation)
+ 
 License
 -------
 [MIT](https://github.com/Marxlp/pyFlightAnalysis/LICENSE)
+
+[open_file]: https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/open_file.png
+[filter_data]: https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/filter_data.gif
+[modify_graph]: https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/modify_graph.png
+[show_quadrotor]:https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/show_quadrotor.png
+[play_data]:https://github.com/Marxlp/pyFlightAnalysis/tree/master/images/play_data.png

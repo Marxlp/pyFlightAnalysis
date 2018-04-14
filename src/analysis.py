@@ -529,6 +529,7 @@ class MainWindow(QtGui.QMainWindow):
     def callback_clear_plotting_data(self):
         """"""
         self.data_plotting = []
+        self.curve_highlighted = []
         self.update_graph()
     
     def callback_graph_index_combobox_changed(self,index):
