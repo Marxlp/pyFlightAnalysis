@@ -88,7 +88,7 @@ If you have install PyQt4 and pyqtgraph but with below error
 
 .. code:: bash
 
-    >>> ImportError: cannot import name QtOpenGL
+    ImportError: cannot import name QtOpenGL
 
 try
 
