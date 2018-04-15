@@ -15,9 +15,7 @@ from pyqtgraph.Qt import QtCore,QtGui
 import pyqtgraph as pg
 from widgets import QuadrotorWin
 
-import pdb
-
-__version__ = '0.1.0'
+__version__ = '1.0.1'
 
 pyqtSignal = QtCore.pyqtSignal
 
