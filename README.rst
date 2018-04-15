@@ -25,10 +25,10 @@ file
 
 .. code:: bash
 
-    # In folder where you want put the source code
-    git clone https://github.com/Marxlp/pyFlightAnalysis.git
-    cd pyFlightAnalysis
-    python analysis.py
+    >>> # In folder where you want put the source code
+    >>> git clone https://github.com/Marxlp/pyFlightAnalysis.git
+    >>> cd pyFlightAnalysis
+    >>> python analysis.py
 
 Install and Run
 ^^^^^^^^^^^^^^^
@@ -41,15 +41,15 @@ support python3.x. After install PyQt, you can
 
 .. code:: bash
 
-    # Install from pypi
-    pip install pyFlightAnalysis
+    >>> # Install from pypi
+    >>> pip install pyFlightAnalysis
 
-    # or install from source
-    git clone https://github.com/Marxlp/pyFlightAnalysis.git
-    python setup.py install
+    >>> # or install from source
+    >>> git clone https://github.com/Marxlp/pyFlightAnalysis.git
+    >>> python setup.py install
 
-    # then run it
-    analysis
+    >>> # then run it
+    >>> analysis
 
 Features
 --------
@@ -88,13 +88,13 @@ If you have install PyQt4 and pyqtgraph but with below error
 
 .. code:: bash
 
-    ImportError: cannot import name QtOpenGL
+    >>> ImportError: cannot import name QtOpenGL
 
 try
 
 .. code:: bash
 
-    sudo apt-get install python-qt4-gl
+    >>> sudo apt-get install python-qt4-gl
 
 License
 -------
