@@ -592,7 +592,7 @@ class MainWindow(QtGui.QMainWindow):
         
     
     def load_data(self):
-        self.log_data = ULog(self.log_file_name).data_list
+        self.log_data = ULog(str(self.log_file_name)).data_list
         self.data_dict = OrderedDict()
         for d in self.log_data:
             data_items_list = [f.field_name for f in d.field_data]
