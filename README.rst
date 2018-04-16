@@ -1,27 +1,26 @@
 pyFlightAnalysis
 ================
 
-A tool written by python to visualize the flight log data inspired by
-FlightGear. Other log analysis tools see
-`dev.px4.io <https://dev.px4.io/advanced-ulog-file-format.html>`__
+A PX4 flight log (ulog) visual analysis tool, inspired by *FlightGear*, and written in Python.
 
 .. figure:: https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/gui.png
    :alt: pyFlightAnalysis GUI
 
    pyFlightAnalysis GUI
+   
+For other log analysis tools see `dev.px4.io <https://dev.px4.io/advanced-ulog-file-format.html>`__
 
 Installation
 ------------
 
-There are two way to run pyFlightAnalysis
+There are two way to install/run *pyFlightAnalysis*.
 
-Run from source
+Run from Source
 ^^^^^^^^^^^^^^^
 
-pyFlightAnalysis is based on pyqtgraph (which based on PyQt ), pyOpenGL,
-pyulog besides generally used scientific packages like numpy, matplotlib
-etc. If you have installed these packages. You can download the source
-file
+*pyFlightAnalysis* is based on: pyqtgraph (which is based on PyQt), pyOpenGL,
+pyulog, and a number of other widely used scientific packages including numpy, matplotlib, etc. 
+Once you have installed these package you can download and run the source file:
 
 .. code:: bash
 
@@ -33,11 +32,11 @@ file
 Install and Run
 ^^^^^^^^^^^^^^^
 
-Due to PyQt4 is can't directly installed by pip, so you need install
-`PyQt4 <https://riverbankcomputing.com/software/pyqt/download>`__ by
-hands. If you use anaconda, it can be installed by
-``conda install pyqt``. PyQt5 can install directly from pip but only
-support python3.x. After install PyQt, you can
+PyQt4 can't directly be installed using pip so you need to 
+`install it manually <https://riverbankcomputing.com/software/pyqt/download>`__ (if using Anaconda, install using the command: `conda install pyqt`). 
+PyQt5 installs directly from pip, but only supports Python 3.x. 
+
+After installing  PyQt do:
 
 .. code:: bash
 
@@ -54,7 +53,7 @@ support python3.x. After install PyQt, you can
 Features
 --------
 
--  Dynamic filter for looking data
+-  Dynamic filter for displaying data
 -  3D visulization for attitude and position of drone
 -  Easily replay with pyqtgraph's ROI (Region Of Interest)
 
@@ -64,27 +63,22 @@ Usage
 Video Tutorial:
 ^^^^^^^^^^^^^^^
 
-`Brief usage tutorial of
-pyFlightAnalysis <https://youtu.be/g05gXfujbFY>`__
+`Brief usage tutorial of pyFlightAnalysis <https://youtu.be/g05gXfujbFY>`__
 
 Literacy Tutorial:
 ^^^^^^^^^^^^^^^^^^
 
-1. Open log file (currently only support .ulg filemat) by clicked |open
-   file|
+1. Open log file (currently only support .ulg format) by clicked |open file|.
 2. Choose data by using filter |filter data| and double click to add it.
-3. Change color or toggle visibility |change color or toggle visibility|
-4. Scroll the middle wheel of mouse to zoom, press down and drag to move
-   the curve
-5. Click |show quadrotor| to show 3D viewer ( currently may not be
-   robust)
-6. Press |play data| to play ( you'd better open the 3D viewer to show
-   the animation)
+3. Change color or toggle visibility |change color or toggle visibility|.
+4. Scroll the middle wheel of mouse to zoom, press down and drag to move the curve.
+5. Click |show quadrotor| to show 3D viewer ( currently may not be robust).
+6. Press |play data| to play ( you'd better open the 3D viewer to show the animation).
 
 Issues
 ------
 
-If you have install PyQt4 and pyqtgraph but with below error
+If you have installed PyQt4 and pyqtgraph but get the error below:
 
 .. code:: bash
 
