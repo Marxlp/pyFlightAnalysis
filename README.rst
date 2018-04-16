@@ -27,7 +27,7 @@ file
 
     >>> # In folder where you want put the source code
     >>> git clone https://github.com/Marxlp/pyFlightAnalysis.git
-    >>> cd pyFlightAnalysis
+    >>> cd pyFlightAnalysis/src
     >>> python analysis.py
 
 Install and Run
