@@ -76,7 +76,6 @@ class MainWindow(QtGui.QMainWindow):
         loadfile_action.setShortcut('Ctrl+O')
         loadfile_action.triggered.connect(self.callback_open_log_file)
         self.toolbar.addAction(loadfile_action)
-        self.log_file_name = None
         self.show_quadrotor_3d = QtGui.QAction(QtGui.QIcon(get_source_name('icons/quadrotor.gif')),'show 3d viewer',self)
         self.show_quadrotor_3d.setShortcut('Ctrl+Shift+Q')
         self.show_quadrotor_3d.triggered.connect(self.callback_show_quadrotor)
@@ -271,9 +270,9 @@ class MainWindow(QtGui.QMainWindow):
         #321
         angles = []
         for i in range(len(q0)):
-            yaw = np.arctan2(2.0 * (q0[i] * q1[i] + q2[i] * q3[i]), 1.0 - 2.0 * (q1[i]**2 + q2[i]**2))
-            roll = np.arcsin(2.0 * (q0[i] * q2[i] - q3[i] * q1[i]))
-            pitch = np.arctan2(2.0 * (q0[i] * q3[i] + q1[i] * q2[i]), 1.0 - 2.0 * (q2[i]**2 + q3[i]**2))
+            yaw = 180/np.pi * np.arctan2(2.0 * (q0[i] * q1[i] + q2[i] * q3[i]), 1.0 - 2.0 * (q1[i]**2 + q2[i]**2))
+            roll = 180/np.pi * np.arcsin(2.0 * (q0[i] * q2[i] - q3[i] * q1[i]))
+            pitch = 180/np.pi * np.arctan2(2.0 * (q0[i] * q3[i] + q1[i] * q2[i]), 1.0 - 2.0 * (q2[i]**2 + q3[i]**2))
             angles.append([yaw,roll,pitch])
         return angles
         
