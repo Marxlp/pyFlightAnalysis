@@ -81,7 +81,11 @@ class MainWindow(QtGui.QMainWindow):
         self.show_quadrotor_3d.setShortcut('Ctrl+Shift+Q')
         self.show_quadrotor_3d.triggered.connect(self.callback_show_quadrotor)
         self.toolbar.addAction(self.show_quadrotor_3d)
-         
+        self.scatter_checkbox = QtGui.QCheckBox("Plot markers", self)
+        self.scatter_checkbox.setCheckable(True)
+        self.scatter_checkbox.stateChanged.connect(self.callback_plot_markers)
+        self.toolbar.addWidget(self.scatter_checkbox)
+
         # Left plot item widget
         self.plot_data_frame = QtGui.QFrame(self)
         self.plot_data_frame.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -456,17 +460,12 @@ class MainWindow(QtGui.QMainWindow):
         ## ms to s
         t = self.log_data[data_index].data['timestamp']/10**6
         data = self.log_data[data_index].data[data_name]
-        curve = self.main_graph.plot(t,data,pen=color,clickable=True,name=item_label)
-        curve.sigClicked.connect(self.callback_curve_clicked)
-        curve.curve.setClickable(True)
+
         # whether show the curve
         showed = True
-        self.data_plotting.append([item_label,color,curve,showed,(t,data),self.id])
-        # increase the id
-        self.id += 1
-        self.update_ROI_graph()
-    
-    
+        self.data_plotting.append([item_label,color,0,showed,(t,data),self.id])
+        self.update_graph()
+
     def callback_curve_clicked(self,curve):
         """"""
         self.curve_clicked = True
@@ -529,7 +528,13 @@ class MainWindow(QtGui.QMainWindow):
         for ind,item in enumerate(self.data_plotting):
             label,color,_,showed,data,_ = item
             if showed:
-                curve = self.main_graph.plot(data[0],data[1],pen=color,name=label)
+                if self.scatter_checkbox.isChecked():
+                    curve = self.main_graph.plot(data[0],data[1],pen=color, symbol='o', name=label)
+                else:
+                    curve = self.main_graph.plot(data[0],data[1],pen=color,name=label)
+
+                curve.sigClicked.connect(self.callback_curve_clicked)
+                curve.curve.setClickable(True)
                 self.data_plotting[ind][2] = curve 
         self.update_ROI_graph()
         
@@ -645,6 +650,10 @@ class MainWindow(QtGui.QMainWindow):
         if closed:
             self.quadrotor_widget_isshow = not self.quadrotor_widget_isshow
             self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor.gif')))
+
+    def callback_plot_markers(self):
+        # update_graph will respect the checkbox state
+       self.update_graph()
 
 class ThreadQDialog(QtCore.QThread):
     def __init__(self,loading_widget,parent=None,*args,**kwargs):
