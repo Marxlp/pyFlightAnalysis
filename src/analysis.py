@@ -163,6 +163,8 @@ class MainWindow(QtGui.QMainWindow):
         self.deletePressed.connect(self.callback_del_plotting_data)
         self.main_graph.scene().sigMouseClicked.connect(self.callback_graph_clicked)
         self.main_graph.addLegend()
+        self.main_graph.showGrid(x=True, y=True, alpha=1.0)
+
         ROI_action = QtGui.QAction('show/hide ROI graph',self.main_graph)
         ROI_action.triggered.connect(self.callback_ROI_triggered)
         self.main_graph.scene().contextMenu.append(ROI_action)
