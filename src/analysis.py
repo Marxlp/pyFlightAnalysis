@@ -531,9 +531,9 @@ class MainWindow(QtGui.QMainWindow):
             label,color,_,showed,data,_ = item
             if showed:
                 if self.scatter_checkbox.isChecked():
-                    curve = self.main_graph.plot(data[0],data[1],pen=color, symbol='o', name=label)
+                    curve = self.main_graph.plot(data[0],data[1],pen=pg.mkPen(color=color, width=6), symbol='o', symbolBrush=pg.mkBrush(color=color), name=label)
                 else:
-                    curve = self.main_graph.plot(data[0],data[1],pen=color,name=label)
+                    curve = self.main_graph.plot(data[0],data[1],pen=pg.mkPen(color=color, width=6),name=label)
 
                 curve.sigClicked.connect(self.callback_curve_clicked)
                 curve.curve.setClickable(True)
