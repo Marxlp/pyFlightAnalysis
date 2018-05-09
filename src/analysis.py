@@ -135,7 +135,6 @@ class MainWindow(QtGui.QMainWindow):
         self.item_list_treeWidget.setColumnCount(3)
         self.item_list_treeWidget.setHeaderLabels(['Flight Data','Type','Length'])
         self.item_list_treeWidget.itemDoubleClicked.connect(self.callback_tree_double_clicked)
-        self.item_list_treeWidget.resizeColumnToContents(2)
         self.list_data_layout.addWidget(self.choose_item_lineEdit)
         self.list_data_layout.addWidget(self.item_list_treeWidget)
         
@@ -648,6 +647,7 @@ class MainWindow(QtGui.QMainWindow):
                 self.item_list_treeWidget.expandItem(
                     QtGui.QTreeWidgetItem(param_name,[data_name[0],data_name[1],data_name[2]]))
             param_name.setExpanded(False)
+            self.item_list_treeWidget.resizeColumnToContents(0)
         
     def quadrotor_win_closed_event(self,closed):
         if closed:
