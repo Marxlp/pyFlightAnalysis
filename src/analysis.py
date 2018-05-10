@@ -14,6 +14,7 @@ from pyulog.core import ULog
 from pyqtgraph.Qt import QtCore,QtGui
 import pyqtgraph as pg
 from widgets import QuadrotorWin
+from scipy import integrate
 
 __version__ = '1.0.1'
 
@@ -101,9 +102,9 @@ class MainWindow(QtGui.QMainWindow):
                                                      QtGui.QAbstractItemView.SelectedClicked)
         self.plotting_data_tableView.setSortingEnabled(False)
         self.plotting_data_tableView.horizontalHeader().setStretchLastSection(True)
+        self.plotting_data_tableView.setColumnCount(6)
+        self.plotting_data_tableView.setHorizontalHeaderLabels(['Label','Color','Visible', 'Offset', 'Scale', 'Function'])
         self.plotting_data_tableView.resizeColumnsToContents()
-        self.plotting_data_tableView.setColumnCount(3)
-        self.plotting_data_tableView.setHorizontalHeaderLabels(['Label','Color','Visible'])
         self.id = 0
         lbl_ploting_data.setBuddy(self.plotting_data_tableView)
         self.plot_data_layout.addWidget(lbl_ploting_data)
@@ -452,10 +453,20 @@ class MainWindow(QtGui.QMainWindow):
         btn.sigColorChanged.connect(self.callback_color_changed)
         self.plotting_data_tableView.setCellWidget(row,1,btn)
         # Curve Visible
-        chk = Checkbox(self.id,'')
-        chk.setChecked(True)
-        chk.sigStateChanged.connect(self.callback_visible_changed)
-        self.plotting_data_tableView.setCellWidget(row,2,chk)
+#        chk = Checkbox(self.id,'')
+#        chk.setChecked(True)
+#        chk.sigStateChanged.connect(self.callback_visible_changed)
+#        self.plotting_data_tableView.setCellWidget(row,2,chk)
+#        offset_box = LineEdit(self.id, "0")
+#        offset_box.sigTextChanged.connect(self.callback_offset_box_text_changed )
+#        self.plotting_data_tableView.setCellWidget(row,3,offset_box)
+#        scale_box = LineEdit(self.id, "1")
+#        scale_box.sigTextChanged.connect(self.callback_scale_box_text_changed )
+#        self.plotting_data_tableView.setCellWidget(row,4,scale_box)
+#        function_drop_down = ComboBox(self.id)
+#        function_drop_down.sigSelectionChanged.connect(self.callback_dropdown_selection_changed)
+#        function_drop_down.addItems(["Integrator, Differentiator"])
+#        self.plotting_data_tableView.setCellWidget(row,5,function_drop_down)
         data_index = self.data_dict.keys().index(item_label.split('->')[0])
         data_name = item_label.split('->')[-1]
         
@@ -465,7 +476,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # whether show the curve
         showed = True
-        self.data_plotting.append([item_label,color,0,showed,(t,data),self.id])
+        self.data_plotting.append([item_label,color,0,showed,(t,data),self.id, 0, 1, 0])
         self.update_graph()
 
     def callback_curve_clicked(self,curve):
@@ -514,6 +525,17 @@ class MainWindow(QtGui.QMainWindow):
             chkbox.setChecked(self.data_plotting[ind][3])
             chkbox.sigStateChanged.connect(self.callback_visible_changed)
             self.plotting_data_tableView.setCellWidget(ind,2,chkbox)
+            offset_box = LineEdit(self.id,str(self.data_plotting[ind][6]))
+            offset_box.sigTextChanged.connect(self.callback_offset_box_text_changed)
+            self.plotting_data_tableView.setCellWidget(ind,3,offset_box)
+            scale_box = LineEdit(self.id,str(self.data_plotting[ind][7]))
+            scale_box.sigTextChanged.connect(self.callback_scale_box_text_changed)
+            self.plotting_data_tableView.setCellWidget(ind,4,scale_box)
+            function_drop_down = ComboBox(self.id)
+            function_drop_down.addItems(["Simple", "Integrator", "Differentiator"])
+            function_drop_down.setCurrentIndex(self.data_plotting[ind][8])
+            function_drop_down.sigSelectionChanged.connect(self.callback_dropdown_selection_changed)
+            self.plotting_data_tableView.setCellWidget(ind,5,function_drop_down)
             self.data_plotting[ind][5] = self.id
             self.id += 1
         # remove curves in graph
@@ -528,7 +550,7 @@ class MainWindow(QtGui.QMainWindow):
         self.main_graph.addLegend()
         # redraw curves
         for ind,item in enumerate(self.data_plotting):
-            label,color,_,showed,data,_ = item
+            label,color,_,showed,data,_,_,_,_ = item
             if showed:
                 if self.scatter_checkbox.isChecked():
                     curve = self.main_graph.plot(data[0],data[1],pen=pg.mkPen(color=color, width=6), symbol='o', symbolBrush=pg.mkBrush(color=color), name=label)
@@ -606,10 +628,10 @@ class MainWindow(QtGui.QMainWindow):
             data_items_list.remove('timestamp')
             data_items_list.insert(0,'timestamp')
             data_items = [(item,str(d.data[item].dtype),str(len(d.data[item]))) for item in data_items_list]
-            self.data_dict.setdefault(d.name,data_items[1:])    
+            self.data_dict.setdefault(d.name+"_"+str(d.multi_id),data_items[1:])
         
         # attitude
-        index = self.data_dict.keys().index('vehicle_attitude')
+        index = self.data_dict.keys().index('vehicle_attitude_0')
         self.time_stamp_attitude = self.log_data[index].data['timestamp']/10**6
         q0 = self.log_data[index].data['q[0]']
         q1 = self.log_data[index].data['q[1]']
@@ -617,7 +639,7 @@ class MainWindow(QtGui.QMainWindow):
         q3 = self.log_data[index].data['q[3]']
         self.attitude_history = self.quat_to_euler(q0,q1,q2,q3)
         # position
-        index = self.data_dict.keys().index('vehicle_local_position')
+        index = self.data_dict.keys().index('vehicle_local_position_0')
         self.time_stamp_position = self.log_data[index].data['timestamp']/10**6
         x = self.log_data[index].data['x']
         y = self.log_data[index].data['y']
@@ -625,7 +647,7 @@ class MainWindow(QtGui.QMainWindow):
         self.position_history = [(x[i]*self.SCALE_FACTOR,y[i]*self.SCALE_FACTOR,
                                   z[i]*self.SCALE_FACTOR) for i in range(len(x))]
         # motor rotation
-        index = self.data_dict.keys().index('actuator_outputs')
+        index = self.data_dict.keys().index('actuator_outputs_0')
         self.time_stamp_output = self.log_data[index].data['timestamp']/10**6
         output0 = self.log_data[index].data['output[0]']
         output1 = self.log_data[index].data['output[1]']
@@ -657,6 +679,52 @@ class MainWindow(QtGui.QMainWindow):
     def callback_plot_markers(self):
         # update_graph will respect the checkbox state
        self.update_graph()
+    def callback_offset_box_text_changed(self, edit):
+        ids = [item[5] for item in self.data_plotting]
+        new_offset = float(edit.text())
+        current_offset = self.data_plotting[ids.index(edit.id)][6]
+        self.data_plotting[ids.index(edit.id)][6] = new_offset
+        data_touple = self.data_plotting[ids.index(edit.id)][4]
+        for index,item in enumerate(data_touple[1]):
+            data_touple[1][index] = data_touple[1][index] + new_offset - current_offset
+
+        self.data_plotting[ids.index(edit.id)][4] = data_touple
+        self.update_graph()
+    def callback_scale_box_text_changed(self, edit):
+        ids = [item[5] for item in self.data_plotting]
+        new_scale = float(edit.text())
+        if abs(new_scale) < 0.00001:
+            new_scale = 0.00001
+        current_scale = self.data_plotting[ids.index(edit.id)][7]
+        self.data_plotting[ids.index(edit.id)][7] = new_scale
+        data_touple = self.data_plotting[ids.index(edit.id)][4]
+        for index,item in enumerate(data_touple[1]):
+            data_touple[1][index] = data_touple[1][index] * new_scale / current_scale
+
+        self.data_plotting[ids.index(edit.id)][4] = data_touple
+        self.update_graph()
+    def callback_dropdown_selection_changed(self, dropdown):
+        if len(self.data_plotting) < 1:
+            return
+        ids = [item[5] for item in self.data_plotting]
+        self.data_plotting[ids.index(dropdown.id)][8] = dropdown.currentIndex()
+        item_label = self.data_plotting[ids.index(dropdown.id)][0]
+        data_index = self.data_dict.keys().index(item_label.split('->')[0])
+        data_name = item_label.split('->')[-1]
+        ## ms to s
+        t = self.log_data[data_index].data['timestamp']/10**6
+
+        data = self.log_data[data_index].data[data_name]
+        if dropdown.currentText() == "Simple":
+            self.data_plotting[ids.index(dropdown.id)][4] = (t, data)
+        elif dropdown.currentText() == "Integrator":
+            data_integ = integrate.cumtrapz(data, t)
+            t = t[1:t.size]
+            self.data_plotting[ids.index(dropdown.id)][4] = (t, data_integ)
+        elif dropdown.currentText() == "Differentiator":
+            data_deriv = np.gradient(data[0:-1], np.diff(t))
+            self.data_plotting[ids.index(dropdown.id)][4] = (t[0:-1], data_deriv)
+        self.update_graph()
 
 class ThreadQDialog(QtCore.QThread):
     def __init__(self,loading_widget,parent=None,*args,**kwargs):
@@ -684,7 +752,7 @@ class ColorPushButton(pg.ColorButton):
         super(ColorPushButton,self).__init__(*args, **kwargs)
 
 class Checkbox(QtGui.QCheckBox):
-    sigStateChanged = pyqtSignal(object) 
+    sigStateChanged = pyqtSignal(object)
     def __init__(self,id,*args,**kwargs):
         self.id = id
         super(Checkbox,self).__init__(*args,**kwargs)
@@ -692,6 +760,22 @@ class Checkbox(QtGui.QCheckBox):
     
     def callback_stateChanged(self):
         self.sigStateChanged.emit(self)
+class LineEdit(QtGui.QLineEdit):
+    sigTextChanged = pyqtSignal(object)
+    def __init__(self,id,*args,**kwargs):
+        self.id = id
+        super(LineEdit,self).__init__(*args,**kwargs)
+        self.editingFinished.connect(self.callback_textChanged)
+    def callback_textChanged(self):
+        self.sigTextChanged.emit(self)
+class ComboBox(QtGui.QComboBox):
+    sigSelectionChanged = pyqtSignal(object)
+    def __init__(self,id,*args,**kwargs):
+        self.id = id
+        super(ComboBox,self).__init__(*args,**kwargs)
+        self.currentIndexChanged.connect(self.callback_IndexChanged)
+    def callback_IndexChanged(self):
+        self.sigSelectionChanged.emit(self)
 
 class TableView(QtGui.QTableWidget):    
     """
