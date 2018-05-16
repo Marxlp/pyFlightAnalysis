@@ -20,7 +20,14 @@ Run from Source
 
 *pyFlightAnalysis* is based on: pyqtgraph (which is based on PyQt), pyOpenGL,
 pyulog, and a number of other widely used scientific packages including numpy, matplotlib, etc. 
-Once you have installed these package you can download and run the source file:
+For python2.x PyQt can't directly be installed using pip so you need to `install it manually <https://riverbankcomputing.com/software/pyqt/download>`__ 
+(if using Anaconda, install using the command: `conda install pyqt`). 
+But for Python 3.x. PyQt5 installs directly from pip. After installing PyQt 
+do below bash commands to install other dependencies.
+
+.. code:: bash
+    >>> pip install pyqtgraph pyOpenGL pyulog matplotlib numpy
+Once you have installed these packages you can download and run the source file:
 
 .. code:: bash
 
@@ -32,11 +39,7 @@ Once you have installed these package you can download and run the source file:
 Install and Run
 ^^^^^^^^^^^^^^^
 
-PyQt4 can't directly be installed using pip so you need to 
-`install it manually <https://riverbankcomputing.com/software/pyqt/download>`__ (if using Anaconda, install using the command: `conda install pyqt`). 
-PyQt5 installs directly from pip, but only supports Python 3.x. 
-
-After installing  PyQt do:
+After installing  PyQt as described above do:
 
 .. code:: bash
 
