@@ -2,7 +2,7 @@ pyFlightAnalysis
 ================
 
 A tool written by python to visualize the flight log data inspired by
-FlightGear. Other log analysis tools see
+FlightPlot. Other log analysis tools see
 `dev.px4.io <https://dev.px4.io/advanced-ulog-file-format.html>`__
 
 .. figure:: https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/gui.png
