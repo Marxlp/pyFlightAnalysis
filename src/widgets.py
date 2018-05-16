@@ -7,6 +7,8 @@ from pyqtgraph.Qt import QtCore,QtGui,QtOpenGL
 from objloader import WFObject
 import numpy as np
 
+
+
 try:
     from OpenGL.GL import *
     from OpenGL.GLUT import *
@@ -21,6 +23,29 @@ pyqtSignal = QtCore.pyqtSignal
 resource_package = __name__ 
 def get_source_name(file_path_name):
     return pkg_resources.resource_filename(resource_package,file_path_name)  
+
+def move_model(x,y,z):
+    def process_draw(some_draw_func):
+        def new_draw_func():
+            glPushMatrix()
+            glTranslatef(x,y,z)
+            some_draw_func()
+            glPopMatrix()
+        return new_draw_func
+    return process_draw
+
+def rotate_model(yaw,roll,pitch):
+    """3-1-2 rotation transform"""
+    def process_draw(some_draw_func):
+        def new_draw_func():
+            glPushMatrix()
+            glRotatef(pitch,0,1,0)
+            glRotatef(roll,1,0,0)
+            glRotatef(yaw,0,0,1)
+            some_draw_func()
+            glPopMatrix()
+        return new_draw_func
+    return process_draw
 
 class QuadrotorWin(QtGui.QMainWindow):
     closed = pyqtSignal(bool)
@@ -227,8 +252,6 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         self.scene_movement[1] += self.movement_ratio*dy
         self.update()
     
-    
-    
     def paintGL(self):
         #glutSetWindow(self.main_window)
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
@@ -257,7 +280,7 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
             gluLookAt(eyex,eyey,eyez,centerx,centery,centerz,0.0,0.0,1.0)
             
         glLightfv(GL_LIGHT0,GL_POSITION,self.light_position)
-        self.draw_model()
+        self.draw_model(self.drone_position,self.drone_angles,self.draw_drone)
         self.draw_axes()
         if self.trace_visible:
             self.draw_trace()
@@ -330,13 +353,12 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         
         glPopMatrix()
         
+    def draw_model(self,displacement,angles,draw_func):
+        move_model(*displacement)(rotate_model(*angles)(draw_func))()
     
-    def draw_model(self):
+    def draw_drone(self):
 #       print('In draw model')
         glPushMatrix()
-        # model translation
-        glTranslatef(self.drone_position[0],-self.drone_position[1],self.drone_position[2])
-        
         # model plot
         glTranslatef(0.0,0.0,9.5)
         # 312
@@ -373,7 +395,7 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         #glScalef(0.25,0.25,0.25)
         glLineWidth(2.0)
         glDisable(GL_LIGHTING)
-        # x axis
+        # X axis
         glColor3f(1,0,0)
         glBegin(GL_LINE_STRIP)
         glVertex3fv(self.ORG)
