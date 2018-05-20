@@ -14,7 +14,7 @@ from pyulog.core import ULog
 from pyqtgraph.Qt import QtCore,QtGui
 import pyqtgraph as pg
 
-sys.path.append(os.path.dirname(path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from widgets import QuadrotorWin
 
