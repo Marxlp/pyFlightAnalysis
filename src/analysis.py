@@ -693,5 +693,7 @@ def main():
     mainwin.show()
     sys.exit(app.exec_())
 
-if __name__ == '__main__':
+if __name__ == '__main__' and __package__ is None:
+    from os import sys, path
+    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
     main()
