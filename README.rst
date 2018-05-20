@@ -1,57 +1,82 @@
 pyFlightAnalysis
 ================
 
-A PX4 flight log (ulog) visual analysis tool, inspired by *FlightPlot*, and written in Python.
+A PX4 flight log (ulog) visual analysis tool, inspired by *FlightPlot*.
 
 .. figure:: https://github.com/Marxlp/pyFlightAnalysis/blob/master/images/gui.png
    :alt: pyFlightAnalysis GUI
 
    pyFlightAnalysis GUI
    
+*pyFlightAnalysis* is written in Python, and depends on *pyqtgraph* (which is based on *PyQt*), *pyOpenGL*, *pyulog*, and a number of other widely used scientific packages including *numpy*, *matplotlib*, etc. 
+   
 For other log analysis tools see `dev.px4.io <https://dev.px4.io/advanced-ulog-file-format.html>`__
 
 Installation
 ------------
 
-There are two way to install/run *pyFlightAnalysis*.
+You can either clone the repository and run the tool directly from source, or you can install *pyFlightAnalysis* (from source or using the PyPi Python package manager) and then run it. In either case you will first need to install PyQt (as shown below).
+
+Install PyQt
+^^^^^^^^^^^^
+
+For *Python 3.x*, PyQt5 can be installed directly from pip:
+
+.. code:: bash
+
+   pip install PyQt5
+   
+For *Python 2.x*, PyQt can't directly be installed using pip. Instead you will need to `install it manually <https://riverbankcomputing.com/software/pyqt/download>`__ 
+(if using Anaconda, install using the command: :code:`conda install pyqt`). 
+
 
 Run from Source
 ^^^^^^^^^^^^^^^
 
-*pyFlightAnalysis* is based on: pyqtgraph (which is based on PyQt), pyOpenGL,
-pyulog, and a number of other widely used scientific packages including numpy, matplotlib, etc. 
-For python2.x, PyQt can't directly be installed using pip so you need to `install it manually <https://riverbankcomputing.com/software/pyqt/download>`__ 
-(if using Anaconda, install using the command: `conda install pyqt`). 
-But for Python 3.x, PyQt5 can't be installed directly from pip. After installing PyQt 
-do below bash commands to install other dependencies.
-
-.. code:: bash
-    >>> pip install pyqtgraph pyOpenGL pyulog matplotlib numpy
-Once you have installed these packages you can download and run the source file:
+After installing PyQt, enter the following commands to install other dependencies:
 
 .. code:: bash
 
-    >>> # In folder where you want put the source code
-    >>> git clone https://github.com/Marxlp/pyFlightAnalysis.git
-    >>> cd pyFlightAnalysis/src
-    >>> python analysis.py
+   pip install pyqtgraph pyOpenGL pyulog matplotlib numpy
+   
+Once you have installed these packages you can clone the source files:
+
+.. code:: bash
+
+   # In folder where you want put the source code
+   git clone https://github.com/Marxlp/pyFlightAnalysis.git
+   
+Then run the *analysis.py* source files:
+   
+   .. code:: bash
+
+      cd pyFlightAnalysis/src
+      python analysis.py
 
 Install and Run
 ^^^^^^^^^^^^^^^
 
-After installing  PyQt as described above, do:
+You can install *pyFlightAnalysis* from either source or PyPi (after first installing PyQt as described above):
 
 .. code:: bash
 
-    >>> # Install from pypi
-    >>> pip install pyFlightAnalysis
+    # Install from pypi
+    pip install pyFlightAnalysis
 
-    >>> # or install from source
-    >>> git clone https://github.com/Marxlp/pyFlightAnalysis.git
-    >>> python setup.py install
+Or 
 
-    >>> # then run it
-    >>> analysis
+.. code:: bash
+
+    # Install from source
+    git clone https://github.com/Marxlp/pyFlightAnalysis.git
+    python setup.py install
+
+After installing *pyFlightAnalysis* you can run it as shown:
+
+.. code:: bash
+
+    analysis
+
 
 Features
 --------
