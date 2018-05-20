@@ -13,6 +13,10 @@ import numpy as np
 from pyulog.core import ULog
 from pyqtgraph.Qt import QtCore,QtGui
 import pyqtgraph as pg
+
+if __name__ == '__main__' and __package__ is None:
+    from os import sys, path
+    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from widgets import QuadrotorWin
 
 __version__ = '1.0.1'
@@ -693,7 +697,5 @@ def main():
     mainwin.show()
     sys.exit(app.exec_())
 
-if __name__ == '__main__' and __package__ is None:
-    from os import sys, path
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+if __name__ == '__main__':
     main()
