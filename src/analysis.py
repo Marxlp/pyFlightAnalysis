@@ -283,7 +283,9 @@ class MainWindow(QtGui.QMainWindow):
         from os.path import expanduser
         home_path = expanduser('~')
         filename = QtGui.QFileDialog.getOpenFileName(self,'Open Log File',home_path,'Log Files (*.ulg)')
-        
+        # On Window, filename will be a tuple (fullpath, filter)
+        if isinstance(filename,tuple):
+            filename = filename[0]
         if filename:
             try:
                 self.log_file_name = filename
