@@ -454,7 +454,7 @@ class MainWindow(QtGui.QMainWindow):
         chk.setChecked(True)
         chk.sigStateChanged.connect(self.callback_visible_changed)
         self.plotting_data_tableView.setCellWidget(row,2,chk)
-        data_index = self.data_dict.keys().index(item_label.split('->')[0])
+        data_index = list(list(self.data_dict.keys())).index(item_label.split('->')[0])
         data_name = item_label.split('->')[-1]
         
         ## ms to s
@@ -606,7 +606,7 @@ class MainWindow(QtGui.QMainWindow):
             self.data_dict.setdefault(d.name,data_items[1:])    
         
         # attitude
-        index = self.data_dict.keys().index('vehicle_attitude')
+        index = list(list(self.data_dict.keys())).index('vehicle_attitude')
         self.time_stamp_attitude = self.log_data[index].data['timestamp']/10**6
         q0 = self.log_data[index].data['q[0]']
         q1 = self.log_data[index].data['q[1]']
@@ -614,7 +614,7 @@ class MainWindow(QtGui.QMainWindow):
         q3 = self.log_data[index].data['q[3]']
         self.attitude_history = self.quat_to_euler(q0,q1,q2,q3)
         # position
-        index = self.data_dict.keys().index('vehicle_local_position')
+        index = list(self.data_dict.keys()).index('vehicle_local_position')
         self.time_stamp_position = self.log_data[index].data['timestamp']/10**6
         x = self.log_data[index].data['x']
         y = self.log_data[index].data['y']
@@ -622,7 +622,7 @@ class MainWindow(QtGui.QMainWindow):
         self.position_history = [(x[i]*self.SCALE_FACTOR,y[i]*self.SCALE_FACTOR,
                                   z[i]*self.SCALE_FACTOR) for i in range(len(x))]
         # motor rotation
-        index = self.data_dict.keys().index('actuator_outputs')
+        index = list(self.data_dict.keys()).index('actuator_outputs')
         self.time_stamp_output = self.log_data[index].data['timestamp']/10**6
         output0 = self.log_data[index].data['output[0]']
         output1 = self.log_data[index].data['output[1]']
