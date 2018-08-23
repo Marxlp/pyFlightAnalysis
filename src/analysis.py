@@ -13,6 +13,9 @@ import numpy as np
 from pyulog.core import ULog
 from pyqtgraph.Qt import QtCore,QtGui
 import pyqtgraph as pg
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -338,7 +341,7 @@ class MainWindow(QtGui.QMainWindow):
             start,end = self.ROI_region.getRegion() 
             t = self.current_time + start
             # emit data
-            indexes = map(self.getIndex,[self.time_stamp_position,self.time_stamp_attitude,self.time_stamp_output],[t,t,t])
+            indexes = list(map(self.getIndex,[self.time_stamp_position,self.time_stamp_attitude,self.time_stamp_output],[t,t,t]))
             state_data = [self.position_history[indexes[0]],
                           self.attitude_history[indexes[1]],self.output_history[indexes[2]]]
             self.quadrotorStateChanged.emit(state_data)
@@ -354,7 +357,7 @@ class MainWindow(QtGui.QMainWindow):
             t = self.current_time + self.time_range[0]
             self.time_slider.setValue(int(dV * self.current_time)) 
             # update quadrotor position and attitude and motor speed
-            indexes = map(self.getIndex,[self.time_stamp_position,self.time_stamp_attitude,self.time_stamp_output],[t,t,t])
+            indexes = list(map(self.getIndex,[self.time_stamp_position,self.time_stamp_attitude,self.time_stamp_output],[t,t,t]))
             state_data = [self.position_history[indexes[0]],
                           self.attitude_history[indexes[1]],self.output_history[indexes[2]]]
             self.quadrotorStateChanged.emit(state_data)
@@ -658,7 +661,12 @@ class ThreadQDialog(QtCore.QThread):
         self.dialog.setModal(True)
         self.dialog.hide()
         self.loading_widget = loading_widget
-        self.connect(self.loading_widget,QtCore.SIGNAL('loadFinished(bool)'),self.callback_close)
+        self.loading_widget.loadFinished.connect(self.callback_close)
+
+        #self.connect(self.lineedit, SIGNAL("returnProcessed()"), self.updateUi)
+        #self.lineedit.returnPressed.connect(self.updateUi)
+
+        #self..connect(self.loading_widget,QtCore.SIGNAL('loadFinished(bool)'),self.callback_close)
     
     def run(self):
         self.dialog.setText('Loading...')
