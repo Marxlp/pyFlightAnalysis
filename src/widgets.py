@@ -7,15 +7,13 @@ from pyqtgraph.Qt import QtCore,QtGui,QtOpenGL
 from objloader import WFObject
 import numpy as np
 
-
-
 try:
     from OpenGL.GL import *
     from OpenGL.GLUT import *
     from OpenGL.GLU import *
 except ImportError:
     app = QtGui.QApplication(sys.argv)
-    QtGui.QMessageBox.critical(None,"OpenGL hellogl",
+    QtGui.QMessageBox.critical(None,"OpenGL Error",
                                "PyOpenGL must be installed to run this program.")
 
 pyqtSignal = QtCore.pyqtSignal
