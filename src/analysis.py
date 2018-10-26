@@ -13,7 +13,7 @@ import numpy as np
 from pyulog.core import ULog
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
-
+import pdb
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from widgets import QuadrotorWin
@@ -603,10 +603,20 @@ class MainWindow(QtGui.QMainWindow):
             data_items_list.remove('timestamp')
             data_items_list.insert(0, 'timestamp')
             data_items = [(item, str(d.data[item].dtype), str(len(d.data[item]))) for item in data_items_list]
-            self.data_dict.setdefault(d.name, data_items[1:])    
+            # add suffix to distinguish same name
+            i = 0
+            name = d.name
+            while True:
+                if i > 0:
+                    name = d.name + '_' + str(i)
+                if self.data_dict.has_key(name):
+                    i += 1
+                else:
+                    break
+            self.data_dict.setdefault(name, data_items[1:])    
         
         # attitude
-        index = list(list(self.data_dict.keys())).index('vehicle_attitude')
+        index = list(self.data_dict.keys()).index('vehicle_attitude')
         self.time_stamp_attitude = self.log_data[index].data['timestamp']/10**6
         q0 = self.log_data[index].data['q[0]']
         q1 = self.log_data[index].data['q[1]']
