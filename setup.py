@@ -2,7 +2,7 @@ from setuptools import setup,find_packages
 
 setup(
         name='pyFlightAnalysis',
-        version='1.0.5b2',
+        version='1.0.6b2',
         description='Flight log Data analysis visualization tool',
         long_description=open('README.rst').read(),
         url='https://github.com/Marxlp/pyFlightAnalysis',
