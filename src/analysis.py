@@ -609,7 +609,7 @@ class MainWindow(QtGui.QMainWindow):
             while True:
                 if i > 0:
                     name = d.name + '_' + str(i)
-                if self.data_dict.has_key(name):
+                if name in self.data_dict:
                     i += 1
                 else:
                     break
