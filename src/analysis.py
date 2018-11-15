@@ -338,7 +338,7 @@ class MainWindow(QtGui.QMainWindow):
             start, end = self.ROI_region.getRegion() 
             t = self.current_time + start
             # emit data
-            indexes = map(self.getIndex, [self.time_stamp_position, self.time_stamp_attitude, self.time_stamp_output], [t, t, t])
+            indexes = list(map(self.getIndex, [self.time_stamp_position, self.time_stamp_attitude, self.time_stamp_output], [t, t, t]))
             state_data = [self.position_history[indexes[0]], 
                           self.attitude_history[indexes[1]], self.output_history[indexes[2]]]
             self.quadrotorStateChanged.emit(state_data)
