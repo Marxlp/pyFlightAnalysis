@@ -7,8 +7,10 @@ from pyqtgraph.Qt import QtCore,QtGui,QtOpenGL
 from objloader import WFObject
 import numpy as np
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+//from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 
 
 
@@ -18,7 +20,7 @@ try:
     from OpenGL.GLU import *
 except ImportError:
     app = QtGui.QApplication(sys.argv)
-    QtGui.QMessageBox.critical(None,"OpenGL hellogl",
+    QtGui.QMessageBox.critical(None,"OpenGL Error",
                                "PyOpenGL must be installed to run this program.")
 
 pyqtSignal = QtCore.pyqtSignal
