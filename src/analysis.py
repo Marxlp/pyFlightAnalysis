@@ -14,9 +14,10 @@ from pyulog.core import ULog
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
 
+import pdb
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from widgets import QuadrotorWin
+from widgets import QuadrotorWin, InfoWin
 
 __version__ = '1.0.5b2'
 
@@ -66,24 +67,34 @@ class MainWindow(QtGui.QMainWindow):
         """
         super(MainWindow, self).__init__()
         
-        self.log_data = None
+        self.log_data_list = None
         self.log_file_name = None
         self.data_dict = None
+        self.log_info_data = None
 
         self.main_widget = QtGui.QWidget(self)
         self.mainlayout = QtGui.QHBoxLayout()
         self.main_widget.setLayout(self.mainlayout)
+        
         # ToolBar
         self.toolbar = self.addToolBar('FileManager')
+        ## load log file
         loadfile_action = QtGui.QAction(QtGui.QIcon(get_source_name('icons/open.gif')), 'Open log file', self)
         loadfile_action.setShortcut('Ctrl+O')
         loadfile_action.triggered.connect(self.callback_open_log_file)
         self.toolbar.addAction(loadfile_action)
+        ## plot quadrotor in 3d graph
         self.show_quadrotor_3d = QtGui.QAction(QtGui.QIcon(get_source_name('icons/quadrotor.gif')), 'show 3d viewer', self)
         self.show_quadrotor_3d.setShortcut('Ctrl+Shift+Q')
         self.show_quadrotor_3d.triggered.connect(self.callback_show_quadrotor)
         self.toolbar.addAction(self.show_quadrotor_3d)
-         
+        ## show quadrotor paramters
+        self.show_info = QtGui.QAction(QtGui.QIcon(get_source_name('icons/info.gif')), 'show log info', self)
+        self.show_info.setShortcut('Ctrl+I')
+        self.show_info.triggered.connect(self.callback_show_info_pane)
+        self.toolbar.addAction(self.show_info)
+        self.info_pane_showed = False
+        
         # Left plot item widget
         self.plot_data_frame = QtGui.QFrame(self)
         self.plot_data_frame.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -101,6 +112,7 @@ class MainWindow(QtGui.QMainWindow):
         self.plotting_data_tableView.horizontalHeader().setStretchLastSection(True)
         self.plotting_data_tableView.resizeColumnsToContents()
         self.plotting_data_tableView.setColumnCount(3)
+        self.plotting_data_tableView.setColumnWidth(0, 160)
         self.plotting_data_tableView.setHorizontalHeaderLabels(['Label', 'Color', 'Visible'])
         self.id = 0
         lbl_ploting_data.setBuddy(self.plotting_data_tableView)
@@ -118,9 +130,9 @@ class MainWindow(QtGui.QMainWindow):
         
         ## Data in the log file
         self.list_data_frame = QtGui.QFrame(self)
-        self.list_data_frame.setMinimumWidth(300)
+        self.list_data_frame.setMinimumWidth(400)
         self.list_data_frame.setMaximumWidth(600)
-        self.list_data_frame.resize(200, 500)
+        self.list_data_frame.resize(400, 500)
         self.list_data_frame.setFrameShape(QtGui.QFrame.StyledPanel)
         self.list_data_layout = QtGui.QVBoxLayout(self.list_data_frame)
         ### line to search item
@@ -131,6 +143,7 @@ class MainWindow(QtGui.QMainWindow):
         self.item_list_treeWidget = QtGui.QTreeWidget(self.list_data_frame)
         self.item_list_treeWidget.clear()
         self.item_list_treeWidget.setColumnCount(3)
+        self.item_list_treeWidget.setColumnWidth(0, 160)
         self.item_list_treeWidget.setHeaderLabels(['Flight Data', 'Type', 'Length'])
         self.item_list_treeWidget.itemDoubleClicked.connect(self.callback_tree_double_clicked)
         self.item_list_treeWidget.resizeColumnToContents(2)
@@ -147,7 +160,7 @@ class MainWindow(QtGui.QMainWindow):
         self.quadrotor_win.closed.connect(self.quadrotor_win_closed_event)
         self.quadrotor_win.hide()
         self.first_load = True
-        self.quadrotor_widget_isshow = False
+        self.quadrotor_widget_isshowed = False
         
         ## default plot
         self.default_graph_widget = pg.GraphicsLayoutWidget()
@@ -280,9 +293,14 @@ class MainWindow(QtGui.QMainWindow):
         return angles
         
     def callback_open_log_file(self):
-        from os.path import expanduser
-        home_path = expanduser('~')
-        filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Log File', home_path, 'Log Files (*.ulg)')
+        with open(get_source_name('config.txt'), 'r+') as conf:
+            path_hist = conf.readline()
+            path = path_hist.split(':')[-1]
+        if not path:
+            from os.path import expanduser
+            path = expanduser('~')
+            
+        filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Log File', path, 'Log Files (*.ulg)')
         # On Window,  filename will be a tuple (fullpath,  filter)
         if isinstance(filename, tuple):
             filename = filename[0]
@@ -292,6 +310,9 @@ class MainWindow(QtGui.QMainWindow):
                 self.load_data()
                 self.load_data_tree()
                 self.time_line_button_play.setEnabled(True)
+                # write the file path to config.txt
+                with open(get_source_name('config.txt'), 'w') as conf:
+                    conf.write('last_path:' + os.path.split(filename)[0])
             except Exception as ex:
                 print(ex)
     
@@ -370,18 +391,36 @@ class MainWindow(QtGui.QMainWindow):
         
         
     def callback_show_quadrotor(self):
-        if self.quadrotor_widget_isshow:
+        if self.quadrotor_widget_isshowed:
             self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor.gif')))
-            self.quadrotor_widget_isshow = not self.quadrotor_widget_isshow
+            self.quadrotor_widget_isshowed = not self.quadrotor_widget_isshowed
             self.quadrotor_win.hide()
             self.update()
         else:
-            self.quadrotor_widget_isshow = not self.quadrotor_widget_isshow
+            self.quadrotor_widget_isshowed = not self.quadrotor_widget_isshowed
             self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor_pressed.gif')))
             splash = ThreadQDialog(self.quadrotor_win.quadrotor_widget, self.quadrotor_win)
             splash.run()
             self.quadrotor_win.show()
             self.update()
+    
+    def callback_show_info_pane(self):
+        if self.log_info_data is not None:
+            if self.info_pane_showed:
+                self.show_info.setIcon(QtGui.QIcon(get_source_name('icons/info.gif')))
+                self.info_pane.close()
+                del self.info_pane
+            else:
+                self.show_info.setIcon(QtGui.QIcon(get_source_name('icons/info_pressed.gif')))
+                self.info_pane = InfoWin(self.log_info_data)
+                self.info_pane.closed.connect(self.callback_show_info_pane_closed)
+                self.info_pane.show()
+                
+            self.info_pane_showed = not self.info_pane_showed
+            
+    def callback_show_info_pane_closed(self, closed):
+        if closed:
+            self.show_info.setIcon(QtGui.QIcon(get_source_name('icons/info.gif')))
             
     def callback_speed_combo_indexChanged(self, index):
         self.current_factor = self.speed_factor / 2**index
@@ -458,8 +497,8 @@ class MainWindow(QtGui.QMainWindow):
         data_name = item_label.split('->')[-1]
         
         ## ms to s
-        t = self.log_data[data_index].data['timestamp']/10**6
-        data = self.log_data[data_index].data[data_name]
+        t = self.log_data_list[data_index].data['timestamp']/10**6
+        data = self.log_data_list[data_index].data[data_name]
         curve = self.main_graph.plot(t, data, pen=color, clickable=True, name=item_label)
         curve.sigClicked.connect(self.callback_curve_clicked)
         curve.curve.setClickable(True)
@@ -596,9 +635,12 @@ class MainWindow(QtGui.QMainWindow):
         
     
     def load_data(self):
-        self.log_data = ULog(str(self.log_file_name)).data_list
+        log_data = ULog(str(self.log_file_name))
+        self.log_info_data = {index:value for index,value in log_data.msg_info_dict.items() if 'perf_' not in index}
+        self.log_info_data['SW version'] = log_data.get_version_info_str()
+        self.log_data_list = log_data.data_list
         self.data_dict = OrderedDict()
-        for d in self.log_data:
+        for d in self.log_data_list:
             data_items_list = [f.field_name for f in d.field_data]
             data_items_list.remove('timestamp')
             data_items_list.insert(0, 'timestamp')
@@ -614,35 +656,36 @@ class MainWindow(QtGui.QMainWindow):
                 else:
                     break
             self.data_dict.setdefault(name, data_items[1:])    
-        
+#         pdb.set_trace()
         # attitude
         index = list(self.data_dict.keys()).index('vehicle_attitude')
-        self.time_stamp_attitude = self.log_data[index].data['timestamp']/10**6
-        q0 = self.log_data[index].data['q[0]']
-        q1 = self.log_data[index].data['q[1]']
-        q2 = self.log_data[index].data['q[2]']
-        q3 = self.log_data[index].data['q[3]']
+        self.time_stamp_attitude = self.log_data_list[index].data['timestamp']/10**6
+        q0 = self.log_data_list[index].data['q[0]']
+        q1 = self.log_data_list[index].data['q[1]']
+        q2 = self.log_data_list[index].data['q[2]']
+        q3 = self.log_data_list[index].data['q[3]']
         self.attitude_history = self.quat_to_euler(q0, q1, q2, q3)
         # position
         index = list(self.data_dict.keys()).index('vehicle_local_position')
-        self.time_stamp_position = self.log_data[index].data['timestamp']/10**6
-        x = self.log_data[index].data['x']
-        y = self.log_data[index].data['y']
-        z = self.log_data[index].data['z']
+        self.time_stamp_position = self.log_data_list[index].data['timestamp']/10**6
+        x = self.log_data_list[index].data['x']
+        y = self.log_data_list[index].data['y']
+        z = self.log_data_list[index].data['z']
         self.position_history = [(x[i]*self.SCALE_FACTOR, y[i]*self.SCALE_FACTOR, 
                                   z[i]*self.SCALE_FACTOR) for i in range(len(x))]
         # motor rotation
         index = list(self.data_dict.keys()).index('actuator_outputs')
-        self.time_stamp_output = self.log_data[index].data['timestamp']/10**6
-        output0 = self.log_data[index].data['output[0]']
-        output1 = self.log_data[index].data['output[1]']
-        output2 = self.log_data[index].data['output[2]']
-        output3 = self.log_data[index].data['output[3]']
+        self.time_stamp_output = self.log_data_list[index].data['timestamp']/10**6
+        output0 = self.log_data_list[index].data['output[0]']
+        output1 = self.log_data_list[index].data['output[1]']
+        output2 = self.log_data_list[index].data['output[2]']
+        output3 = self.log_data_list[index].data['output[3]']
         self.output_history = [(output0[i], output1[i], output2[i], output3[i]) for i in range(len(output0))]
         
         # get common time range
         self.time_range = max([self.time_stamp_attitude[0], self.time_stamp_output[0], self.time_stamp_position[0]]), \
                             min([self.time_stamp_attitude[-1], self.time_stamp_output[-1], self.time_stamp_position[-1]])
+        self.data_loaded = True
         
     def load_data_tree(self):
         # update the tree list table
@@ -657,7 +700,7 @@ class MainWindow(QtGui.QMainWindow):
         
     def quadrotor_win_closed_event(self, closed):
         if closed:
-            self.quadrotor_widget_isshow = not self.quadrotor_widget_isshow
+            self.quadrotor_widget_isshowed = not self.quadrotor_widget_isshowed
             self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor.gif')))
 
 class ThreadQDialog(QtCore.QThread):

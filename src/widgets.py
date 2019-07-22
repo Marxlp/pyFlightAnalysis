@@ -6,6 +6,8 @@ from OpenGL.raw.GL.VERSION.GL_1_1 import GL_SHININESS
 from pyqtgraph.Qt import QtCore,QtGui,QtOpenGL
 from objloader import WFObject
 import numpy as np
+import pdb
+from matplotlib.backends.qt_compat import QtWidgets
 
 try:
     from OpenGL.GL import *
@@ -44,6 +46,36 @@ def rotate_model(yaw,roll,pitch):
             glPopMatrix()
         return new_draw_func
     return process_draw
+
+class InfoWin(QtGui.QMainWindow):
+    closed = pyqtSignal(bool)
+    
+    def __init__(self, info_data, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.resize(QtCore.QSize(500,500))
+        self.info_table = QtGui.QTableWidget()
+        self.setCentralWidget(self.info_table)
+        self.info_table.setEditTriggers(QtGui.QAbstractItemView.DoubleClicked | 
+                                                     QtGui.QAbstractItemView.SelectedClicked)
+        self.info_table.setSortingEnabled(False)
+        self.info_table.horizontalHeader().setStretchLastSection(True)
+        self.info_table.resizeColumnsToContents()
+        self.info_table.setColumnCount(2)
+        self.info_table.setColumnWidth(0, 120)
+        self.info_table.setColumnWidth(1, 50)
+        self.info_table.setHorizontalHeaderLabels(['Name', 'value'])
+        index = 0
+        for name, value in info_data.items():
+            self.info_table.insertRow(index)
+            self.info_table.setCellWidget(index, 0, QtGui.QLabel(name))
+            self.info_table.setCellWidget(index, 1, QtGui.QLabel(str(value)))
+            index += 1
+#             self.info_table.setCellWidget(index, 0, QtGui.QLabel(des))
+    
+    def closeEvent(self, *args, **kwargs):
+        self.closed.emit(True)
+        return QtGui.QMainWindow.closeEvent(self, *args, **kwargs)
+        
 
 class QuadrotorWin(QtGui.QMainWindow):
     closed = pyqtSignal(bool)
