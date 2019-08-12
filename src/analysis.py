@@ -17,7 +17,7 @@ import pyqtgraph as pg
 import pdb
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from widgets import QuadrotorWin, InfoWin
+from widgets import QuadrotorWin, InfoWin, TabWidget
 
 __version__ = '1.0.5b2'
 
@@ -55,15 +55,16 @@ class MainWindow(QtGui.QMainWindow):
     def __init__(self):
         """
         Frame of GUI
-        =========================
-        |_MenuBar_______________|
-        |    |                  |
-        |plot|     graph1       |
-        |list|------------------|
-        |----|                  |
-        |data|     graph2       |
-        |list|                  |
-        =========================
+        ===========================
+        | ToolBar____ ____        |
+        |_______|tab1|tab2|_______|
+        |    | |                  |
+        |plot| |     graph1       |
+        |list| |------------------|
+        |----|<|                  |
+        |data| |     graph2       |
+        |list| |                  |
+        ===========================
         """
         super(MainWindow, self).__init__()
         
@@ -78,11 +79,12 @@ class MainWindow(QtGui.QMainWindow):
         
         # ToolBar
         self.toolbar = self.addToolBar('FileManager')
+        self.basic_tool_group = QtGui.QActionGroup(self)
         ## load log file
-        loadfile_action = QtGui.QAction(QtGui.QIcon(get_source_name('icons/open.gif')), 'Open log file', self)
-        loadfile_action.setShortcut('Ctrl+O')
-        loadfile_action.triggered.connect(self.callback_open_log_file)
-        self.toolbar.addAction(loadfile_action)
+        self.loadfile_action = QtGui.QAction(QtGui.QIcon(get_source_name('icons/open.gif')), 'Open log file', self)
+        self.loadfile_action.setShortcut('Ctrl+O')
+        self.loadfile_action.triggered.connect(self.callback_open_log_file)
+        self.toolbar.addAction(self.loadfile_action)
         ## plot quadrotor in 3d graph
         self.show_quadrotor_3d = QtGui.QAction(QtGui.QIcon(get_source_name('icons/quadrotor.gif')), 'show 3d viewer', self)
         self.show_quadrotor_3d.setShortcut('Ctrl+Shift+Q')
@@ -93,12 +95,16 @@ class MainWindow(QtGui.QMainWindow):
         self.show_info.setShortcut('Ctrl+I')
         self.show_info.triggered.connect(self.callback_show_info_pane)
         self.toolbar.addAction(self.show_info)
+        self.basic_tool_group.addAction(self.loadfile_action)
+        self.basic_tool_group.addAction(self.show_quadrotor_3d)
+        self.basic_tool_group.addAction(self.show_info)
         self.info_pane_showed = False
         
         # Left plot item widget
         self.plot_data_frame = QtGui.QFrame(self)
         self.plot_data_frame.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.plot_data_layout = QtGui.QVBoxLayout(self.plot_data_frame)
+#         self.plot_data_layout_H = QtGui.QHBoxLayout(self.plot_data_frame)
+        self.plot_data_layout_V = QtGui.QVBoxLayout(self.plot_data_frame)
         
         ## Data Plotting
         self.data_plotting = []
@@ -116,8 +122,8 @@ class MainWindow(QtGui.QMainWindow):
         self.plotting_data_tableView.setHorizontalHeaderLabels(['Label', 'Color', 'Visible'])
         self.id = 0
         lbl_ploting_data.setBuddy(self.plotting_data_tableView)
-        self.plot_data_layout.addWidget(lbl_ploting_data)
-        self.plot_data_layout.addWidget(self.plotting_data_tableView)
+        self.plot_data_layout_V.addWidget(lbl_ploting_data)
+        self.plot_data_layout_V.addWidget(self.plotting_data_tableView)
         
         edit_layout = QtGui.QHBoxLayout()
         self.delete_btn = QtGui.QPushButton('Delete')
@@ -126,7 +132,7 @@ class MainWindow(QtGui.QMainWindow):
         self.clear_btn.clicked.connect(self.callback_clear_plotting_data)
         edit_layout.addWidget(self.delete_btn)
         edit_layout.addWidget(self.clear_btn)
-        self.plot_data_layout.addLayout(edit_layout)
+        self.plot_data_layout_V.addLayout(edit_layout)
         
         ## Data in the log file
         self.list_data_frame = QtGui.QFrame(self)
@@ -152,6 +158,7 @@ class MainWindow(QtGui.QMainWindow):
         
         # Right plot item
         self.graph_frame = QtGui.QFrame(self)
+        self.default_tab = TabWidget(self.graph_frame)
         self.graph_frame.setFrameShape(QtGui.QFrame.StyledPanel)
         self.animation_layout = QtGui.QVBoxLayout(self.graph_frame)
         
@@ -164,6 +171,7 @@ class MainWindow(QtGui.QMainWindow):
         
         ## default plot
         self.default_graph_widget = pg.GraphicsLayoutWidget()
+        self.default_tab.addTab(self.default_graph_widget, 'custom')
         ### a hidable ROI region
         self.detail_graph = self.default_graph_widget.addPlot(row=0, col=0)
         self.detail_graph.setAutoVisible(True)
@@ -207,7 +215,7 @@ class MainWindow(QtGui.QMainWindow):
         ## flag whether there is a curve clicked after last clicked event
         self.curve_clicked = False
         self.curve_highlighted = []
-        self.animation_layout.addWidget(self.default_graph_widget)
+        self.animation_layout.addWidget(self.default_tab)
         ## time line
         self.time_line_frame = QtGui.QFrame(self)
         self.time_line_frame.setMaximumHeight(45)
@@ -237,6 +245,7 @@ class MainWindow(QtGui.QMainWindow):
         self.time_slider.setRange(0, 100)
         #### index for time_stamp
         self.time_line_layout.addWidget(self.time_slider)
+        
         ## timer
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.animation_update)
@@ -293,7 +302,7 @@ class MainWindow(QtGui.QMainWindow):
         return angles
         
     def callback_open_log_file(self):
-        with open(get_source_name('config.txt'), 'r+') as conf:
+        with open(get_source_name('config.txt'), 'w+') as conf:
             path_hist = conf.readline()
             path = path_hist.split(':')[-1]
         if not path:
@@ -543,6 +552,16 @@ class MainWindow(QtGui.QMainWindow):
         ids = [item[5] for item in self.data_plotting]
         self.data_plotting[ids.index(btn.id)][1] = color
         self.update_graph()
+        
+    def keyPressEvent(self, event, *args, **kwargs):
+        print(event)
+        if event.key() == QtCore.Qt.Key_S:
+            print('S pressed')
+            if self.splitter1.isHidden():
+                self.splitter1.show()
+            else:
+                self.splitter1.hide()
+        return QtGui.QMainWindow.keyPressEvent(self, event, *args, **kwargs)
     
     def update_graph(self):
         self.plotting_data_tableView.setRowCount(0)
@@ -744,11 +763,16 @@ class TableView(QtGui.QTableWidget):
     """
     def __init__(self,  *args,  **kwargs):
         QtGui.QTableView.__init__(self,  *args,  **kwargs)
-        
+
+
 def main():
+    def func():
+        print(app.focusWidget())
     app = QtGui.QApplication(sys.argv)
+    app.focusChanged.connect(func)
     mainwin = MainWindow()
     mainwin.show()
+    print(app.focusWidget())
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
