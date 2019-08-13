@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from widgets import QuadrotorWin, InfoWin, TabWidget
 
-__version__ = '1.0.5b2'
+__version__ = '1.1.0b'
 
 pyqtSignal = QtCore.pyqtSignal
 
@@ -263,13 +263,10 @@ class MainWindow(QtGui.QMainWindow):
         self.splitter3 = QtGui.QSplitter(QtCore.Qt.Horizontal)
         self.splitter3.addWidget(self.splitter1)
         self.splitter3.addWidget(self.splitter2)
-        
         self.mainlayout.addWidget(self.splitter3)
-        
         self.setCentralWidget(self.main_widget)
         self.setGeometry(200, 200, 800, 800)
         self.setWindowTitle("pyFlightAnalysis")
-        
         self.quadrotorStateChanged.connect(self.quadrotor_win.callback_update_quadrotor_pos)
         self.quadrotorStateReseted.connect(self.quadrotor_win.callback_quadrotor_state_reset)
     
@@ -290,21 +287,24 @@ class MainWindow(QtGui.QMainWindow):
         return len(data) - 1
              
     @staticmethod
-    # ref:https://github.com/PX4/Firmware/blob/master/src/lib/mathlib/math/Quaternion.hpp
     def quat_to_euler(q0, q1, q2, q3):
         #321
         angles = []
         for i in range(len(q0)):
-            yaw = 180/np.pi * np.arctan2(2.0 * (q0[i] * q1[i] + q2[i] * q3[i]),  1.0 - 2.0 * (q1[i]**2 + q2[i]**2))
-            roll = 180/np.pi * np.arcsin(2.0 * (q0[i] * q2[i] - q3[i] * q1[i]))
-            pitch = 180/np.pi * np.arctan2(2.0 * (q0[i] * q3[i] + q1[i] * q2[i]),  1.0 - 2.0 * (q2[i]**2 + q3[i]**2))
+            roll = 180/np.pi * np.arctan2(2.0 * (q0[i] * q1[i] + q2[i] * q3[i]),  1.0 - 2.0 * (q1[i]**2 + q2[i]**2))
+            pitch = 180/np.pi * np.arcsin(2.0 * (q0[i] * q2[i] - q3[i] * q1[i]))
+            yaw = 180/np.pi * np.arctan2(2.0 * (q0[i] * q3[i] + q1[i] * q2[i]),  1.0 - 2.0 * (q2[i]**2 + q3[i]**2))
             angles.append([yaw, roll, pitch])
         return angles
         
     def callback_open_log_file(self):
-        with open(get_source_name('config.txt'), 'w+') as conf:
-            path_hist = conf.readline()
-            path = path_hist.split(':')[-1]
+        config_path = os.path.join(os.getcwd(), get_source_name('config.txt'))
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as conf:
+                path_hist = conf.readline()
+                path = path_hist.split(':')[-1]
+        else:
+            path = ''
         if not path:
             from os.path import expanduser
             path = expanduser('~')
@@ -358,7 +358,6 @@ class MainWindow(QtGui.QMainWindow):
         self.vLine.hide()
         self.vLine_detail.hide()
         self.quadrotorStateReseted.emit(True)
-        
     
     def animation_update(self):
         """update the quadrotor state"""
@@ -387,6 +386,7 @@ class MainWindow(QtGui.QMainWindow):
             indexes = list(map(self.getIndex, [self.time_stamp_position, self.time_stamp_attitude, self.time_stamp_output], [t, t, t]))
             state_data = [self.position_history[indexes[0]], 
                           self.attitude_history[indexes[1]], self.output_history[indexes[2]]]
+            print('state:',state_data)
             self.quadrotorStateChanged.emit(state_data)
             # update vLine pos
             self.vLine.setPos(t)
@@ -508,6 +508,9 @@ class MainWindow(QtGui.QMainWindow):
         ## ms to s
         t = self.log_data_list[data_index].data['timestamp']/10**6
         data = self.log_data_list[data_index].data[data_name]
+        if len(self.data_plotting) == 0:
+            label_style = {'color': '#EEE', 'font-size':'14pt'}
+            self.main_graph.setLabel('bottom', 't(s)', **label_style)
         curve = self.main_graph.plot(t, data, pen=color, clickable=True, name=item_label)
         curve.sigClicked.connect(self.callback_curve_clicked)
         curve.curve.setClickable(True)
@@ -688,6 +691,7 @@ class MainWindow(QtGui.QMainWindow):
         index = list(self.data_dict.keys()).index('vehicle_local_position')
         self.time_stamp_position = self.log_data_list[index].data['timestamp']/10**6
         x = self.log_data_list[index].data['x']
+        print('x', x)
         y = self.log_data_list[index].data['y']
         z = self.log_data_list[index].data['z']
         self.position_history = [(x[i]*self.SCALE_FACTOR, y[i]*self.SCALE_FACTOR, 

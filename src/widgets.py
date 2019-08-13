@@ -21,6 +21,7 @@ except ImportError:
 pyqtSignal = QtCore.pyqtSignal
 
 resource_package = __name__ 
+
 def get_source_name(file_path_name):
     return pkg_resources.resource_filename(resource_package,file_path_name)  
 

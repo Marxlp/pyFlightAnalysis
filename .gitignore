@@ -3,3 +3,7 @@ test/
 .project
 .pydevproject
 .settings/
+build/
+dist/
+*.log
+pyFlightAnalysis.egg-info/
