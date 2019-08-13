@@ -1,6 +1,7 @@
 
 from __future__ import division
 import time
+from copy import deepcopy
 import pkg_resources
 from OpenGL.raw.GL.VERSION.GL_1_1 import GL_SHININESS
 from pyqtgraph.Qt import QtCore,QtGui,QtOpenGL
@@ -107,7 +108,91 @@ class InfoWin(QtGui.QMainWindow):
     def closeEvent(self, *args, **kwargs):
         self.closed.emit(True)
         return QtGui.QMainWindow.closeEvent(self, *args, **kwargs)
+
+class ParamsWin(QtGui.QMainWindow):
+    closed = pyqtSignal(bool)
+    def __init__(self, params_data, changed_params_data, *args, **kwargs):
+        self.params_data = params_data
+        self.params_data_show = list(self.params_data.keys())
+        self.changed_params_data = changed_params_data
+        super().__init__(*args, **kwargs)
+        self.resize(QtCore.QSize(500,500))
+        self.params_table = QtGui.QTableWidget()
+        self.choose_item_lineEdit = QtGui.QLineEdit(self)
+        self.choose_item_lineEdit.setPlaceholderText('filter by data name')
+        self.choose_item_lineEdit.textChanged.connect(self.callback_filter)
+        self.btn_changed_filter = QtGui.QPushButton('Changed')
+        self.btn_changed_filter.clicked.connect(self.btn_changed_filter_clicked) 
+        w = QtGui.QWidget()
+        self.vlayout = QtGui.QVBoxLayout(w)
+        self.hlayout = QtGui.QHBoxLayout(self)
+        self.setCentralWidget(w)
+        self.centralWidget().setLayout(self.vlayout)
+        self.vlayout.addWidget(self.params_table)
+        self.vlayout.addLayout(self.hlayout)
+        self.hlayout.addWidget(self.btn_changed_filter)
+        self.hlayout.addWidget(self.choose_item_lineEdit)
+        self.params_table.setEditTriggers(QtGui.QAbstractItemView.DoubleClicked | 
+                                                     QtGui.QAbstractItemView.SelectedClicked)
+        self.params_table.setSortingEnabled(False)
+        self.params_table.horizontalHeader().setStretchLastSection(True)
+        self.params_table.resizeColumnsToContents()
+        self.params_table.setColumnCount(2)
+        self.params_table.setColumnWidth(0, 120)
+        self.params_table.setColumnWidth(1, 50)
+        self.params_table.setHorizontalHeaderLabels(['Name', 'value'])
+        self.show_all_params = True
+        self.filtertext = ''
+        self.update_table()
         
+    def closeEvent(self, *args, **kwargs):
+        self.closed.emit(True)
+        return QtGui.QMainWindow.closeEvent(self, *args, **kwargs)
+    
+    def filter(self):
+        if self.show_all_params:
+            self.params_data_show = list(self.params_data.keys())
+        else:
+            self.params_data_show = deepcopy(self.changed_params_data)
+        names_to_be_removed = []
+        for name in self.params_data_show:
+            if self.filtertext not in name:
+                names_to_be_removed.append(name)
+        for name in names_to_be_removed:
+            self.params_data_show.remove(name)
+    
+    def callback_filter(self, filtertext):
+        self.filtertext = str(filtertext)
+        self.filter()
+        self.update_table()
+        
+    def btn_changed_filter_clicked(self):
+        self.show_all_params  = not self.show_all_params
+        if self.show_all_params:
+            text = 'Changed'
+        else:
+            text = 'All'
+        self.btn_changed_filter.setText(text)
+        self.filter()
+        self.update_table()
+    
+    def update_table(self):
+        self.params_table.setRowCount(0)
+        index = 0
+        for name, value in self.params_data.items():
+            if name in self.params_data_show:
+                self.params_table.insertRow(index)
+                if name in self.changed_params_data:
+                    name_str = "<font color='red'>%s</font>"%(name)
+                    value_str = "<font color='red'>%s</font>"%(str(value))
+                else:
+                    name_str = name
+                    value_str = str(value)
+                name_lbl = QtGui.QLabel(name_str)
+                value_lbl = QtGui.QLabel(value_str)
+                self.params_table.setCellWidget(index, 0, name_lbl)
+                self.params_table.setCellWidget(index, 1, value_lbl)
+                index += 1
 
 class QuadrotorWin(QtGui.QMainWindow):
     closed = pyqtSignal(bool)

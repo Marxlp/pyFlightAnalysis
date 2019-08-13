@@ -19,10 +19,9 @@ pg.setConfigOption('foreground', 'k')
 import pdb
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from widgets import QuadrotorWin, InfoWin, TabWidget
+from widgets import QuadrotorWin, InfoWin, ParamsWin, TabWidget
 
 __version__ = '1.1.0b'
-
 pyqtSignal = QtCore.pyqtSignal
 
 try:
@@ -140,6 +139,8 @@ class MainWindow(QtGui.QMainWindow):
         self.log_file_name = None
         self.data_dict = None
         self.log_info_data = None
+        self.log_params_data = None
+        self.log_changed_params = []
 
         self.main_widget = QtGui.QWidget(self)
         self.mainlayout = QtGui.QHBoxLayout()
@@ -158,15 +159,46 @@ class MainWindow(QtGui.QMainWindow):
         self.show_quadrotor_3d.setShortcut('Ctrl+Shift+Q')
         self.show_quadrotor_3d.triggered.connect(self.callback_show_quadrotor)
         self.toolbar.addAction(self.show_quadrotor_3d)
-        ## show quadrotor paramters
+        ## show quadrotor info
         self.show_info = QtGui.QAction(QtGui.QIcon(get_source_name('icons/info.gif')), 'show log info', self)
         self.show_info.setShortcut('Ctrl+I')
         self.show_info.triggered.connect(self.callback_show_info_pane)
         self.toolbar.addAction(self.show_info)
+        self.info_pane_showed = False
+        ## show quadrotor param
+        self.show_params = QtGui.QAction(QtGui.QIcon(get_source_name('icons/params.gif')), 'show params', self)
+        self.show_params.setShortcut('Ctrl+P')
+        self.show_params.triggered.connect(self.callback_show_parameters)
+        self.toolbar.addAction(self.show_params)
+        self.params_pane_showed = False
         self.basic_tool_group.addAction(self.loadfile_action)
         self.basic_tool_group.addAction(self.show_quadrotor_3d)
         self.basic_tool_group.addAction(self.show_info)
-        self.info_pane_showed = False
+        self.basic_tool_group.addAction(self.show_params)
+        ## show some analysis graph
+        self.analysis_graph_list = QtGui.QComboBox();
+        #### refer: flight review
+        self.graph_predefined = ['XY_Estimation',
+                           'Altitude Estimate',
+                           'Roll Angle',
+                           'Roll Angle Rate',
+                           'Pitch Angle',
+                           'Pitch Angle Rate',
+                           'Yaw Angle',
+                           'Yaw Angle Rate',
+                           'Local Position X',
+                           'Local Position Y',
+                           'Local Position Z',
+                           'Velocity',
+                           'Manual Control Input',
+                           'Actuator Controls 0',
+                           'Actuation Outputs(Main)',
+                           'Distance Sensor',
+                           'GPS Uncertainty',
+                           'CPU & RAM',
+                           'Power']
+        self.analysis_graph_list.addItems(self.graph_predefined)
+        self.toolbar.addWidget(self.analysis_graph_list)
         
         # Left plot item widget
         self.plot_data_frame = QtGui.QFrame(self)
@@ -200,8 +232,8 @@ class MainWindow(QtGui.QMainWindow):
         self.delete_btn.clicked.connect(self.callback_del_plotting_data)
         self.clear_btn = QtGui.QPushButton('Clear')
         self.clear_btn.clicked.connect(self.callback_clear_plotting_data)
-        edit_layout.addWidget(self.delete_btn)
         edit_layout.addWidget(self.clear_btn)
+        edit_layout.addWidget(self.delete_btn)
         self.plot_data_layout_V.addLayout(edit_layout)
         
         ## Data in the log file
@@ -248,6 +280,7 @@ class MainWindow(QtGui.QMainWindow):
         self.detail_graph.hide()
         ### main graph to plot curves
         self.main_graph = self.default_graph_widget.addPlot(row=1, col=0)
+        self.main_graph.showGrid(x=True, y=True)
         self.main_graph.keyPressEvent = self.keyPressed
         self.deletePressed.connect(self.callback_del_plotting_data)
         self.main_graph.scene().sigMouseClicked.connect(self.callback_graph_clicked)
@@ -335,7 +368,7 @@ class MainWindow(QtGui.QMainWindow):
         self.splitter3.addWidget(self.splitter2)
         self.mainlayout.addWidget(self.splitter3)
         self.setCentralWidget(self.main_widget)
-        self.setGeometry(200, 200, 800, 800)
+        self.setGeometry(200, 200, 1000, 800)
         self.setWindowTitle("pyFlightAnalysis")
         self.quadrotorStateChanged.connect(self.quadrotor_win.callback_update_quadrotor_pos)
         self.quadrotorStateReseted.connect(self.quadrotor_win.callback_quadrotor_state_reset)
@@ -500,7 +533,24 @@ class MainWindow(QtGui.QMainWindow):
     def callback_show_info_pane_closed(self, closed):
         if closed:
             self.show_info.setIcon(QtGui.QIcon(get_source_name('icons/info.gif')))
-            
+    
+    def callback_show_parameters(self):
+        if self.log_params_data is not None:
+            if self.params_pane_showed:
+                self.show_params.setIcon(QtGui.QIcon(get_source_name('icons/params.gif')))
+                self.params_pane.close()
+                del self.params_pane
+            else:
+                self.show_params.setIcon(QtGui.QIcon(get_source_name('icons/params_pressed.gif')))
+                self.params_pane = ParamsWin(self.log_params_data, self.log_changed_params)
+                self.params_pane.closed.connect(self.callback_show_params_pane_closed)
+                self.params_pane.show()
+            self.params_pane_showed = not self.params_pane_showed
+        
+    def callback_show_params_pane_closed(self, closed):
+        if closed:
+            self.show_params.setIcon(QtGui.QIcon(get_source_name('icons/params.gif')))
+    
     def callback_speed_combo_indexChanged(self, index):
         self.current_factor = self.speed_factor / 2**index
     
@@ -514,9 +564,13 @@ class MainWindow(QtGui.QMainWindow):
                 self.item_list_treeWidget.clear()
                 for key, values_name in self.data_dict.items():
                     values_satisfied = [] 
-                    for value in values_name:
-                        if filtertext in value[0]:
+                    if filtertext in key:
+                        for value in values_name:
                             values_satisfied.append(value)
+                    else:
+                        for value in values_name:
+                            if filtertext in value[0]:
+                                values_satisfied.append(value)
                     if values_satisfied:
                         param_name = QtGui.QTreeWidgetItem(self.item_list_treeWidget, [key])
                         self.item_list_treeWidget.expandItem(param_name)
@@ -585,7 +639,7 @@ class MainWindow(QtGui.QMainWindow):
         t = self.log_data_list[data_index].data['timestamp']/10**6
         data = self.log_data_list[data_index].data[data_name]
         if len(self.data_plotting) == 0:
-            label_style = {'color': '#EEE', 'font-size':'14pt'}
+            label_style = {'color': '#EEEE', 'font-size':'14pt'}
             self.main_graph.setLabel('bottom', 't(s)', **label_style)
         curve = self.main_graph.plot(t, data, symbol=marker, pen=color, clickable=True, name=item_label)
         curve.sigClicked.connect(self.callback_curve_clicked)
@@ -740,13 +794,15 @@ class MainWindow(QtGui.QMainWindow):
         items = self.main_graph.items
         for item in items:
             if isinstance(item, pg.PlotDataItem):
-                self.detail_graph.plot(item.xData, item.yData, pen=item.opts['pen'])
+                self.detail_graph.plot(item.xData, item.yData, symbol=item.opts['symbol'], pen=item.opts['pen'])
         
     
     def load_data(self):
         log_data = ULog(str(self.log_file_name))
         self.log_info_data = {index:value for index,value in log_data.msg_info_dict.items() if 'perf_' not in index}
         self.log_info_data['SW version'] = log_data.get_version_info_str()
+        self.log_params_data = log_data.initial_parameters
+        self.log_params_data = OrderedDict([(key, self.log_params_data[key]) for key in sorted(self.log_params_data)])
         self.log_data_list = log_data.data_list
         self.data_dict = OrderedDict()
         for d in self.log_data_list:
@@ -811,8 +867,10 @@ class MainWindow(QtGui.QMainWindow):
         if closed:
             self.quadrotor_widget_isshowed = not self.quadrotor_widget_isshowed
             self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor.gif')))
-
-
+    
+    def draw_predefined_graph(self, graph_handle, name):
+        pass
+    
 def main():
     def func():
         print(app.focusWidget())
