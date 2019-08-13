@@ -13,6 +13,8 @@ import numpy as np
 from pyulog.core import ULog
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
+pg.setConfigOption('background', 'w')
+pg.setConfigOption('foreground', 'k')
 
 import pdb
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -44,13 +46,79 @@ def get_source_name(file_path_name):
 
 basepath = os.path.dirname(__file__)
 
+class ThreadQDialog(QtCore.QThread):
+    def __init__(self,  loading_widget,  parent=None,  *args,  **kwargs):
+        super(ThreadQDialog, self).__init__(parent,  *args,  **kwargs)
+        self.dialog = QtGui.QMessageBox()
+        self.dialog.setWindowTitle('Info:Loading')
+        self.dialog.setModal(True)
+        self.dialog.hide()
+        self.loading_widget = loading_widget
+        self.loading_widget.loadFinished.connect(self.callback_close)
+    
+    def run(self):
+        self.dialog.setText('Loading...')
+        self.dialog.setStyleSheet('QLabel{min-width: 100px;}')
+        self.dialog.show()
+        
+    def callback_close(self, isFinished):
+        if isFinished:
+            self.dialog.close()
+            return
+
+class ColorPushButton(pg.ColorButton):
+    def __init__(self, id, *args, **kwargs):
+        self.id = id
+        super(ColorPushButton, self).__init__(*args,  **kwargs)
+
+class Checkbox(QtGui.QCheckBox):
+    sigStateChanged = pyqtSignal(object) 
+    def __init__(self, id, *args, **kwargs):
+        self.id = id
+        super(Checkbox, self).__init__(*args, **kwargs)
+        self.stateChanged.connect(self.callback_stateChanged)
+    
+    def callback_stateChanged(self):
+        self.sigStateChanged.emit(self)
+        
+class Marker(QtGui.QComboBox):
+    sigMarkerChanged = pyqtSignal(object)
+    def __init__(self, id, *args, **kwargs):
+        self.id = id
+        super().__init__(*args, **kwargs)
+        self.marker = None
+        self._markerlist = OrderedDict([('None',None), ('☐','s'), ('▽','t'), ('○','o'), ('+','+')])
+        for key in self._markerlist.keys():
+            self.addItem(key)
+        self.currentIndexChanged.connect(self.callback_markerChanged)
+    
+    def callback_markerChanged(self):
+        self.marker = list(self._markerlist.values())[self.currentIndex()]
+        self.sigMarkerChanged.emit(self)
+    
+    def set_marker(self, marker=None):
+        if marker in self._markerlist.values():
+            self.marker = marker
+            self.setCurrentIndex(list(self._markerlist.values()).index(marker))
+        else:
+            raise TypeError('marker not in the MarkerList')
+        
+
+class TableView(QtGui.QTableWidget):    
+    """
+    A simple table to demonstrate the QComboBox delegate.
+    """
+    def __init__(self,  *args,  **kwargs):
+        QtGui.QTableView.__init__(self,  *args,  **kwargs)
+
+
 class MainWindow(QtGui.QMainWindow):
     
     deletePressed = pyqtSignal(bool)
     quadrotorStateChanged = pyqtSignal(object)
     motorSpeedChanged = pyqtSignal(object)
     quadrotorStateReseted = pyqtSignal(bool)
-    SCALE_FACTOR = 100
+    SCALE_FACTOR = 50
     
     def __init__(self):
         """
@@ -106,7 +174,7 @@ class MainWindow(QtGui.QMainWindow):
 #         self.plot_data_layout_H = QtGui.QHBoxLayout(self.plot_data_frame)
         self.plot_data_layout_V = QtGui.QVBoxLayout(self.plot_data_frame)
         
-        ## Data Plotting
+        ## Data Plotting [id, filesystem, ]
         self.data_plotting = []
         ### There exist a Default graph
         self.line_ID = 0
@@ -117,9 +185,11 @@ class MainWindow(QtGui.QMainWindow):
         self.plotting_data_tableView.setSortingEnabled(False)
         self.plotting_data_tableView.horizontalHeader().setStretchLastSection(True)
         self.plotting_data_tableView.resizeColumnsToContents()
-        self.plotting_data_tableView.setColumnCount(3)
-        self.plotting_data_tableView.setColumnWidth(0, 160)
-        self.plotting_data_tableView.setHorizontalHeaderLabels(['Label', 'Color', 'Visible'])
+        self.plotting_data_tableView.setColumnCount(4)
+        self.plotting_data_tableView.setColumnWidth(0, 200)
+        self.plotting_data_tableView.setColumnWidth(1, 40)
+        self.plotting_data_tableView.setColumnWidth(2, 50)
+        self.plotting_data_tableView.setHorizontalHeaderLabels(['Label', 'Color', 'Visible', 'Marker'])
         self.id = 0
         lbl_ploting_data.setBuddy(self.plotting_data_tableView)
         self.plot_data_layout_V.addWidget(lbl_ploting_data)
@@ -386,7 +456,7 @@ class MainWindow(QtGui.QMainWindow):
             indexes = list(map(self.getIndex, [self.time_stamp_position, self.time_stamp_attitude, self.time_stamp_output], [t, t, t]))
             state_data = [self.position_history[indexes[0]], 
                           self.attitude_history[indexes[1]], self.output_history[indexes[2]]]
-            print('state:',state_data)
+#             print('state:',state_data)
             self.quadrotorStateChanged.emit(state_data)
             # update vLine pos
             self.vLine.setPos(t)
@@ -502,6 +572,12 @@ class MainWindow(QtGui.QMainWindow):
         chk.setChecked(True)
         chk.sigStateChanged.connect(self.callback_visible_changed)
         self.plotting_data_tableView.setCellWidget(row, 2, chk)
+        # Curve Marker
+        marker = None
+        mkr = Marker(self.id)
+        mkr.sigMarkerChanged.connect(self.callback_marker_changed)
+        self.plotting_data_tableView.setCellWidget(row, 3, mkr)
+        
         data_index = list(list(self.data_dict.keys())).index(item_label.split('->')[0])
         data_name = item_label.split('->')[-1]
         
@@ -511,12 +587,12 @@ class MainWindow(QtGui.QMainWindow):
         if len(self.data_plotting) == 0:
             label_style = {'color': '#EEE', 'font-size':'14pt'}
             self.main_graph.setLabel('bottom', 't(s)', **label_style)
-        curve = self.main_graph.plot(t, data, pen=color, clickable=True, name=item_label)
+        curve = self.main_graph.plot(t, data, symbol=marker, pen=color, clickable=True, name=item_label)
         curve.sigClicked.connect(self.callback_curve_clicked)
         curve.curve.setClickable(True)
         # whether show the curve
         showed = True
-        self.data_plotting.append([item_label, color, curve, showed, (t, data), self.id])
+        self.data_plotting.append([item_label, color, curve, showed, (t, data), self.id, marker])
         # increase the id
         self.id += 1
         self.update_ROI_graph()
@@ -556,6 +632,12 @@ class MainWindow(QtGui.QMainWindow):
         self.data_plotting[ids.index(btn.id)][1] = color
         self.update_graph()
         
+    def callback_marker_changed(self, mkr):
+        ids = [item[5] for item in self.data_plotting]
+        print(ids, mkr.id)
+        self.data_plotting[ids.index(mkr.id)][6] = mkr.marker
+        self.update_graph()
+        
     def keyPressEvent(self, event, *args, **kwargs):
         print(event)
         if event.key() == QtCore.Qt.Key_S:
@@ -569,6 +651,7 @@ class MainWindow(QtGui.QMainWindow):
     def update_graph(self):
         self.plotting_data_tableView.setRowCount(0)
         for ind, item in enumerate(self.data_plotting):
+            print('ind:', ind, 'id:', self.id)
             self.plotting_data_tableView.insertRow(ind)
             self.plotting_data_tableView.setCellWidget(ind, 0, QtGui.QLabel(item[0]))
             btn = ColorPushButton(self.id, self.plotting_data_tableView, item[1])
@@ -578,6 +661,10 @@ class MainWindow(QtGui.QMainWindow):
             chkbox.setChecked(self.data_plotting[ind][3])
             chkbox.sigStateChanged.connect(self.callback_visible_changed)
             self.plotting_data_tableView.setCellWidget(ind, 2, chkbox)
+            mkr = Marker(self.id)
+            mkr.set_marker(item[6])
+            mkr.sigMarkerChanged.connect(self.callback_marker_changed)
+            self.plotting_data_tableView.setCellWidget(ind, 3, mkr)
             self.data_plotting[ind][5] = self.id
             self.id += 1
         # remove curves in graph
@@ -592,9 +679,9 @@ class MainWindow(QtGui.QMainWindow):
         self.main_graph.addLegend()
         # redraw curves
         for ind, item in enumerate(self.data_plotting):
-            label, color, _, showed, data, _ = item
+            label, color, _, showed, data, _, marker = item
             if showed:
-                curve = self.main_graph.plot(data[0], data[1], pen=color, name=label)
+                curve = self.main_graph.plot(data[0], data[1], symbol=marker, pen=color, name=label)
                 self.data_plotting[ind][2] = curve 
         self.update_ROI_graph()
         
@@ -691,7 +778,6 @@ class MainWindow(QtGui.QMainWindow):
         index = list(self.data_dict.keys()).index('vehicle_local_position')
         self.time_stamp_position = self.log_data_list[index].data['timestamp']/10**6
         x = self.log_data_list[index].data['x']
-        print('x', x)
         y = self.log_data_list[index].data['y']
         z = self.log_data_list[index].data['z']
         self.position_history = [(x[i]*self.SCALE_FACTOR, y[i]*self.SCALE_FACTOR, 
@@ -725,48 +811,6 @@ class MainWindow(QtGui.QMainWindow):
         if closed:
             self.quadrotor_widget_isshowed = not self.quadrotor_widget_isshowed
             self.show_quadrotor_3d.setIcon(QtGui.QIcon(get_source_name('icons/quadrotor.gif')))
-
-class ThreadQDialog(QtCore.QThread):
-    def __init__(self,  loading_widget,  parent=None,  *args,  **kwargs):
-        super(ThreadQDialog, self).__init__(parent,  *args,  **kwargs)
-        self.dialog = QtGui.QMessageBox()
-        self.dialog.setWindowTitle('Info:Loading')
-        self.dialog.setModal(True)
-        self.dialog.hide()
-        self.loading_widget = loading_widget
-        self.loading_widget.loadFinished.connect(self.callback_close)
-    
-    def run(self):
-        self.dialog.setText('Loading...')
-        self.dialog.setStyleSheet('QLabel{min-width: 100px;}')
-        self.dialog.show()
-        
-    def callback_close(self, isFinished):
-        if isFinished:
-            self.dialog.close()
-            return
-
-class ColorPushButton(pg.ColorButton):
-    def __init__(self, id, *args, **kwargs):
-        self.id = id
-        super(ColorPushButton, self).__init__(*args,  **kwargs)
-
-class Checkbox(QtGui.QCheckBox):
-    sigStateChanged = pyqtSignal(object) 
-    def __init__(self, id, *args, **kwargs):
-        self.id = id
-        super(Checkbox, self).__init__(*args, **kwargs)
-        self.stateChanged.connect(self.callback_stateChanged)
-    
-    def callback_stateChanged(self):
-        self.sigStateChanged.emit(self)
-
-class TableView(QtGui.QTableWidget):    
-    """
-    A simple table to demonstrate the QComboBox delegate.
-    """
-    def __init__(self,  *args,  **kwargs):
-        QtGui.QTableView.__init__(self,  *args,  **kwargs)
 
 
 def main():

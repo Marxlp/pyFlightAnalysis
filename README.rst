@@ -15,20 +15,17 @@ For other log analysis tools see `dev.px4.io <https://dev.px4.io/advanced-ulog-f
 Installation
 ------------
 
-You can either clone the repository and run the tool directly from source, or you can install *pyFlightAnalysis* (from source or using the PyPi Python package manager) and then run it. In either case you will first need to install PyQt (as shown below).
+pyFlightAnalysis only supports *Python 3.x*. To use pyFlightAnalysis, you can either clone the repository and run the tool directly from source, or you can install *pyFlightAnalysis* (from source or using the PyPi Python package manager) and then run it. In either case you will first need to install PyQt (as shown below).
 
 Install PyQt
 ^^^^^^^^^^^^
 
-For *Python 3.x*, PyQt5 can be installed directly from pip:
+PyQt5 can be installed directly from pip:
 
 .. code:: bash
 
    pip install PyQt5
    
-For *Python 2.x*, PyQt can't directly be installed using pip. Instead you will need to `install it manually <https://riverbankcomputing.com/software/pyqt/download>`__ 
-(if using Anaconda, install using the command: :code:`conda install pyqt`). 
-
 
 Run from Source
 ^^^^^^^^^^^^^^^

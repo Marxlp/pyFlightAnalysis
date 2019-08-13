@@ -183,7 +183,7 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         ## perspective
         self.fovy = 60
         self.near = 0.01
-        self.far = 500
+        self.far = 2000
         
         # axes parameters
         self.tip = 0
