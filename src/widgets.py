@@ -1,12 +1,15 @@
 
 from __future__ import division
 import time
+from collections import OrderedDict
 from copy import deepcopy
 import pkg_resources
 from OpenGL.raw.GL.VERSION.GL_1_1 import GL_SHININESS
 from pyqtgraph.Qt import QtCore,QtGui,QtOpenGL
+import pyqtgraph as pg
 from objloader import WFObject
 import numpy as np
+import time
 import pdb
 from matplotlib.backends.qt_compat import QtWidgets
 
@@ -36,7 +39,7 @@ def move_model(x,y,z):
         return new_draw_func
     return process_draw
 
-def rotate_model(yaw,roll,pitch):
+def rotate_model(roll,pitch, yaw):
     """3-1-2 rotation transform"""
     def process_draw(some_draw_func):
         def new_draw_func():
@@ -48,6 +51,101 @@ def rotate_model(yaw,roll,pitch):
             glPopMatrix()
         return new_draw_func
     return process_draw
+
+class Marker(QtGui.QComboBox):
+    sigMarkerChanged = pyqtSignal(object)
+    def __init__(self, marker=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.marker = marker
+        self._markerdict = OrderedDict([('None',None), ('☐','s'), ('▽','t'), ('○','o'), ('+','+')])
+        for key in self._markerdict.keys():
+            self.addItem(key)
+        self.setCurrentIndex(list(self._markerdict.values()).index(self.marker))
+        self.currentIndexChanged.connect(self.callback_markerChanged)
+    
+    def callback_markerChanged(self):
+        self.marker = list(self._markerdict.values())[self.currentIndex()]
+        self.sigMarkerChanged.emit(self)
+    
+    def set_marker(self, marker=None):
+        if marker in self._markerdict.values():
+            self.marker = marker
+            self.setCurrentIndex(list(self._markerdict.values()).index(marker))
+        else:
+            raise TypeError('marker not in the MarkerList')
+
+class PropertyLabel(QtGui.QLabel):
+    sigPropertyChanged = pyqtSignal(bool)
+    def __init__(self, item_id, mainwindow, *args, **kwargs):
+        self.id = item_id
+        self.mainwindow = mainwindow
+        self.markdict = OrderedDict([(None,'None'), ('s','☐'), ('t','▽'), ('o','○'), ('+','+')])
+        super().__init__(*args, **kwargs)
+        
+    def mouseDoubleClickEvent(self, event, *args, **kwargs):
+        print('label double clicked')
+        self.win = CurveModifyWin(self.id, self.mainwindow)
+        self.win.sigCurveChanged.connect(self.callback_sigchanged)
+        self.win.show()
+        QtGui.QApplication.processEvents()
+        time.sleep(0.2)
+        
+    def update_tab_text(self):
+        curve = self.mainwindow.data_plotting[self.id][2]
+        marker = curve.opts['symbol']
+        color = curve.opts['pen']
+        color_text = '#{0[0]:02x}{0[1]:02x}{0[2]:02x}'.format(color)
+        self.setText("<font color='{0}'>{1}</font> {2}".format(color_text,'▇▇',self.markdict[marker]))
+    
+    def callback_sigchanged(self):
+        self.sigPropertyChanged.emit(True)
+
+class ThreadQDialog(QtCore.QThread):
+    def __init__(self,  loading_widget,  parent=None,  *args,  **kwargs):
+        super(ThreadQDialog, self).__init__(parent,  *args,  **kwargs)
+        self.dialog = QtGui.QMessageBox()
+        self.dialog.setWindowTitle('Info:Loading')
+        self.dialog.setModal(True)
+        self.dialog.hide()
+        self.loading_widget = loading_widget
+        self.loading_widget.loadFinished.connect(self.callback_close)
+    
+    def run(self):
+        self.dialog.setText('Loading...')
+        self.dialog.setStyleSheet('QLabel{min-width: 100px;}')
+        self.dialog.show()
+        
+    def callback_close(self, isFinished):
+        if isFinished:
+            self.dialog.close()
+            return
+
+class ColorPushButton(pg.ColorButton):
+    def __init__(self, id, *args, **kwargs):
+        self.id = id
+        super(ColorPushButton, self).__init__(*args,  **kwargs)
+
+class Checkbox(QtGui.QCheckBox):
+    sigStateChanged = pyqtSignal(object) 
+    def __init__(self, id, *args, **kwargs):
+        self.id = id
+        super(Checkbox, self).__init__(*args, **kwargs)
+        self.stateChanged.connect(self.callback_stateChanged)
+    
+    def callback_stateChanged(self):
+        self.sigStateChanged.emit(self)
+        
+class LineEdit(QtGui.QLineEdit):
+    sigTextChanged = pyqtSignal(bool)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def keyPressEvent(self, event, *args, **kwargs):
+        if event.key() == QtCore.Qt.Key_Enter:
+            self.sigTextChanged.emit(True)
+        else:
+            QtGui.QLineEdit.keyPressEvent(self, event, *args, **kwargs)
+
 
 class TabBar(QtWidgets.QTabBar):
     def __init__(self, colors, parent=None):
@@ -80,6 +178,74 @@ class TabWidget(QtWidgets.QTabWidget):
         }
         self.setTabBar(TabBar(d))
 
+class CurveModifyWin(QtGui.QMainWindow):
+    sigCurveChanged = pyqtSignal(bool)
+    def __init__(self, item_id, mainwindow, *args, **kargs):
+        self.id = item_id
+        self.mainwindow = mainwindow
+        super().__init__(*args, **kargs)
+        self.resize(QtCore.QSize(300, 200))
+        self.properties_table = QtGui.QTableWidget()
+#         self.setCentralWidget(self.properties_table)
+        self.properties_table.setSortingEnabled(False)
+        self.properties_table.horizontalHeader().setStretchLastSection(True)
+        self.properties_table.resizeColumnsToContents()
+        self.properties_table.setColumnCount(2)
+        self.properties_table.setColumnWidth(0, 120)
+        self.properties_table.setColumnWidth(1, 50)
+        self.properties_table.setHorizontalHeaderLabels(['Property', 'value'])
+        # first row --- color
+        self.properties_table.insertRow(0)
+        self.properties_table.setCellWidget(0, 0, QtGui.QLabel('Color'))
+        self.curve = mainwindow.data_plotting[self.id][2]
+        self.btn = ColorPushButton(self.id, self.properties_table, self.curve.opts['pen'])
+        self.properties_table.setCellWidget(0, 1, self.btn)
+        # second row --- symbol
+        self.properties_table.insertRow(1)
+        self.properties_table.setCellWidget(1, 0, QtGui.QLabel('Marker'))
+        self.mkr = Marker(self.curve.opts['symbol'])
+        self.properties_table.setCellWidget(1, 1, self.mkr)
+        # third row --- symbol size
+        self.properties_table.insertRow(2)
+        self.properties_table.setCellWidget(2, 0, QtGui.QLabel('Marker Size'))
+        print('symbolSize:', str(self.curve.opts['symbolSize']))
+        self.ln = LineEdit(str(self.curve.opts['symbolSize']))
+        self.properties_table.setCellWidget(2, 1, self.ln)
+        w = QtGui.QWidget()
+        self.vlayout = QtGui.QVBoxLayout()
+        self.hlayout = QtGui.QHBoxLayout()
+        self.setCentralWidget(w)
+        self.centralWidget().setLayout(self.vlayout)
+        self.vlayout.addWidget(self.properties_table)
+        self.vlayout.addLayout(self.hlayout)
+        self.cancel_btn = QtGui.QPushButton('Cancel')
+        self.ok_btn = QtGui.QPushButton('OK')
+        self.cancel_btn.clicked.connect(self.callback_cancel_clicked)
+        self.ok_btn.clicked.connect(self.callback_properties_changed)
+        self.hlayout.addWidget(self.cancel_btn)
+        self.hlayout.addWidget(self.ok_btn)
+    
+    def closeEvent(self, *args, **kwargs):
+        return QtGui.QMainWindow.closeEvent(self, *args, **kwargs)
+    
+    def callback_cancel_clicked(self):
+        self.close()
+    
+    def callback_properties_changed(self, *args, **kwargs):
+        self.curve.opts['symbol'] = self.mkr.marker
+        self.curve.opts['pen'] = self.btn.color()
+        try:
+            self.curve.opts['symbolSize'] = int(self.ln.text())
+            print('set size finished to ', self.curve.opts['symbolSize'])
+        except:
+            d = QtGui.QDialog('Input Error')
+            b1 = QtGui.QPushButton("ok",d)
+            d.setWindowModality(QtCore.Qt.ApplicationModal)
+            d.exec_()
+        # update graph and items in plot list pane
+        self.sigCurveChanged.emit(True)
+            
+
 class InfoWin(QtGui.QMainWindow):
     closed = pyqtSignal(bool)
     
@@ -88,8 +254,6 @@ class InfoWin(QtGui.QMainWindow):
         self.resize(QtCore.QSize(500,500))
         self.info_table = QtGui.QTableWidget()
         self.setCentralWidget(self.info_table)
-        self.info_table.setEditTriggers(QtGui.QAbstractItemView.DoubleClicked | 
-                                                     QtGui.QAbstractItemView.SelectedClicked)
         self.info_table.setSortingEnabled(False)
         self.info_table.horizontalHeader().setStretchLastSection(True)
         self.info_table.resizeColumnsToContents()
@@ -193,6 +357,312 @@ class ParamsWin(QtGui.QMainWindow):
                 self.params_table.setCellWidget(index, 0, name_lbl)
                 self.params_table.setCellWidget(index, 1, value_lbl)
                 index += 1
+                
+class AnalysisGraphWin(QtGui.QMainWindow):
+    sigChecked = pyqtSignal(tuple)
+    sigUnchecked = pyqtSignal(str)
+    closed = pyqtSignal(bool)
+    def __init__(self, mainwindow, *args, **kwargs):
+        self.mainwindow = mainwindow
+        # gui
+        self.graph_predefined_list = ['XY_Estimation',
+                                       'Altitude Estimate',
+                                       'Roll Angle',
+                                       'Pitch Angle',
+                                       'Yaw Angle',
+                                       'Roll Angle Rate',
+                                       'Pitch Angle Rate',
+                                       'Yaw Angle Rate',
+                                       'Local Position X',
+                                       'Local Position Y',
+                                       'Local Position Z',
+                                       'Velocity',
+                                       'Manual Control Input',
+                                       'Actuator Controls 0',
+                                       'Actuation Outputs(Main)',
+                                       'Actuation Outputs(Aux)',
+                                       'Magnetic field strength',
+                                       'Distance Sensor',
+                                       'GPS Uncertainty',
+                                       'GPS noise and jamming',
+                                       'CPU & RAM',
+                                       'Power']
+        super().__init__(*args,**kwargs)
+        self.setFixedSize(QtCore.QSize(300, 660))
+        self.graph_table = QtGui.QTableWidget(self)
+        self.graph_table.setColumnCount(2)
+        self.graph_table.setColumnWidth(0, 200)
+        self.graph_table.setColumnWidth(1, 40)
+        for index, item in enumerate(self.graph_predefined_list):
+            self.graph_table.insertRow(index)
+            lbl = QtGui.QLabel(item)
+            lbl.mouseDoubleClickEvent = self.callback_double_clicked(item)
+            self.graph_table.setCellWidget(index, 0, lbl)
+            chk = Checkbox(item)
+            if item in self.mainwindow.analysis_graph_list:
+                chk.setChecked(True)
+            chk.sigStateChanged.connect(self.callback_check_state_changed)
+            self.graph_table.setCellWidget(index, 1, chk)
+        self.clear_btn = QtGui.QPushButton('Clear all')
+        self.clear_btn.clicked.connect(self.callback_clear)
+        #
+        w = QtGui.QWidget()
+        self.vlayout = QtGui.QVBoxLayout(w)
+        self.setCentralWidget(w)
+        self.centralWidget().setLayout(self.vlayout)
+        self.vlayout.addWidget(self.graph_table)
+        self.vlayout.addWidget(self.clear_btn)    
+    
+    def callback_double_clicked(self, lbl_text):
+        def func(*args, **kwargs):
+            if lbl_text in self.mainwindow.analysis_graph_list:
+                ind = list(self.mainwindow.analysis_graph_list.keys()).index(lbl_text)
+                self.mainwindow.default_tab.setCurrentIndex(ind + 3)
+        return func
+    
+    def callback_item_clicked(self):
+        pass
+    
+    def callback_clear(self):
+        for index in range(self.graph_table.columnCount()):
+            self.graph_table.item(index, 1).setChecked(False)
+    
+    def callback_check_state_changed(self, chk):
+        graph_name = chk.id
+        if not chk.isChecked():
+            self.sigUnchecked.emit(graph_name)
+        else:
+            if graph_name == 'XY_Estimation':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position')
+                x = self.mainwindow.log_data_list[data_index].data['x']
+                y = self.mainwindow.log_data_list[data_index].data['y']
+                data = ['2d',(x,y, 'XY_Estimation')]
+            elif graph_name == 'Altitude Estimate':
+                data = ['t']
+                # gps
+                try:
+                    data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_gps_position')
+                    gps_alt = self.mainwindow.log_data_list[data_index].data['alt'] * 0.001
+                    gps_t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                    data.append((gps_t, gps_alt, 'GPS Altitude'))
+                except:
+                    print('No vehicle_gps_position')
+                
+                # barometer
+                try:
+                    data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_air_data')
+                    bra_alt = self.mainwindow.log_data_list[data_index].data['baro_alt_meter']
+                    bra_t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                    data.append((bra_t, bra_alt, 'Barometer Altitude'))
+                except:
+                    print('No vehicle_air_data')
+                # Fused 
+                try:
+                    data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_global_position')
+                    fused_alt = self.mainwindow.log_data_list[data_index].data['alt']
+                    fused_t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                    data.append((fused_t, fused_alt, 'Fused Altitude'))
+                except:
+                    print('No vehicle_global_position')
+                    
+                # setpoint
+                try:
+                    data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_setpoint_triplet')
+                    current_alt = self.mainwindow.log_data_list[data_index].data['current.alt']
+                    current_t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                    data.append((current_t, current_alt, 'Altitude Setpoint'))
+                except:
+                    print('No vehicle_setpoint_triplet')
+                
+                # actuator_controls_0
+                try:
+                    data_index = list(list(self.mainwindow.data_dict.keys())).index('actuator_controls_0')
+                    thrust_v = self.mainwindow.log_data_list[data_index].data['control[3]'] * 100
+                    thrust_t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                    data.append((thrust_t, thrust_v, 'Thust [0, 100]'))
+                except:
+                    print('No actuator_controls_0')
+                
+            elif graph_name in ['Roll Angle',
+                                'Pitch Angle',
+                                'Yaw Angle']:
+                data_index_dict = {'Roll Angle':0,
+                                   'Pitch Angle':1,
+                                   'Yaw Angle':2}
+                data_index = data_index_dict[graph_name]
+                angle = [angles[data_index] for angles in self.mainwindow.attitude_history]
+                angle_t = self.mainwindow.time_stamp_attitude
+                angle_setpoint = [angles[data_index] for angles in self.mainwindow.attitude_setpoint_history]
+                angle_setpoint_t = self.mainwindow.time_stamp_attitude_setpoint
+                data = ['t', (angle_t, angle, graph_name + ' Estimated'), 
+                        (angle_setpoint_t, angle_setpoint, graph_name + ' Setpoint')]
+                
+            elif graph_name in ['Roll Angle Rate',
+                                'Pitch Angle Rate',
+                                'Yaw Angle Rate',]:
+                data_index_dict = {'Roll Angle Rate':['rollspeed', 'roll'], 
+                                   'Pitch Angle Rate':['pitchspeed', 'pitch'],
+                                   'Yaw Angle Rate':['yawspeed', 'yaw']}
+                data_name = data_index_dict[graph_name]
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_attitude')
+                angle_rate = np.rad2deg(self.mainwindow.log_data_list[data_index].data[data_name[0]])
+                t_angle_rate = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_rates_setpoint')
+                angle_rate_setpoint = np.rad2deg(self.mainwindow.log_data_list[data_index].data[data_name[1]])
+                t_angle_rate_setpoint = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data = ['t', (t_angle_rate, angle_rate, graph_name + ' Estimated'), 
+                            (t_angle_rate_setpoint, angle_rate_setpoint, graph_name + ' Setpoint')]
+                
+            elif graph_name in ['Local Position X',
+                                'Local Position Y',
+                                'Local Position Z']:
+                data_index_dict = {'Local Position X':'x',
+                                    'Local Position Y':'y',
+                                    'Local Position Z':'z'}
+                data_name = data_index_dict[graph_name]
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position')
+                x = self.mainwindow.log_data_list[data_index].data[data_name]
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position_setpoint')
+                x_setpoint = self.mainwindow.log_data_list[data_index].data[data_name]
+                t_x_setpoint = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data = ['t', (t, x, graph_name + ' Estimated'),
+                        (t_x_setpoint, x_setpoint, graph_name + ' Setpoint')]
+                
+            elif graph_name == 'Velocity':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position')
+                vx = self.mainwindow.log_data_list[data_index].data['vx']
+                vy = self.mainwindow.log_data_list[data_index].data['vy']
+                vz = self.mainwindow.log_data_list[data_index].data['vz']
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position_setpoint')
+                vx_setpoint = self.mainwindow.log_data_list[data_index].data['vx']
+                vy_setpoint = self.mainwindow.log_data_list[data_index].data['vy']
+                vz_setpoint = self.mainwindow.log_data_list[data_index].data['vz']
+                t_setpoint = self.mainwindow.log_data_list[data_index].data['timestamp'] 
+                data = ['t',(t, vx, 'VX'),
+                        (t, vy, 'VY'),
+                        (t, vz, 'VZ'), 
+                        (t_setpoint, vx_setpoint, 'VX setpoint'),
+                        (t_setpoint, vy_setpoint, 'VY setpoint'),
+                        (t_setpoint, vz_setpoint, 'VZ setpoint')]
+                
+            elif graph_name == 'Manual Control Input':
+                # not compatible to other format
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('manual_control_setpoint')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data = ['t']
+                data_name_dict = {'y':'Y / Roll', 'x':'X / Pitch', 'r':'Yaw', 
+                                  'z': 'Throttle [0, 1]', 'mode_slot': 'Flight Mode', 
+                                  'aux1': 'Aux1', 'aux2':'Aux2',
+                                  'kill_switch':'Kill Switch'}
+                for name, label in data_name_dict.items():
+                    if name == 'mode_slot':
+                        data.append((t, self.mainwindow.log_data_list[data_index].data[name]/6, label))
+                    elif name == 'kill_switch':
+                        data.append((t, (self.mainwindow.log_data_list[data_index].data[name] == 1).astype(np.uint32), label))
+                    else:
+                        data.append((t, self.mainwindow.log_data_list[data_index].data[name], label))
+            elif graph_name == 'Actuator Controls 0':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('actuator_controls_0')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data = ['t']
+                data_name_list = ['Roll', 'Pitch', 'Yaw', 'Thrust']
+                for i in range(4):
+                    name = 'control[%d]' % (i)
+                    data.append((t, self.mainwindow.log_data_list[data_index].data[name]), 
+                                data_name_list[i])
+                
+            elif graph_name == 'Actuation Outputs(Main)':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('actuator_outputs')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data = ['t']
+                for i in range(8):
+                    name = 'control[%d]' % (i)
+                    data.append((t, self.mainwindow.log_data_list[name], name))
+                    
+            elif graph_name == 'Actuation Outputs(Aux)':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('actuator_outputs_1')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                num_outputs = np.max(self.mainwindow.log_data_list[data_index].data['noutputs'])
+                data = ['t']
+                for i in range(num_outputs):
+                    name = 'control[%d]' % (i)
+                    data.append((t, self.mainwindow.log_data_list[name], name))
+            elif graph_name == 'Magnetic field strength':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('sensor_combined')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data = ['t']
+                for i in range(3):
+                    name = 'magnetometer_ga[%d]'%(i)
+                    data.append((t, self.mainwindow.log_data_list[name], name))
+                    
+            elif graph_name == 'Distance Sensor':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('sensor_combined')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                current_distance = self.mainwindow.log_data_list[data_index].data['current_distance']
+                covariance = self.mainwindow.log_data_list[data_index].data['covariance']
+                data = ['t', (t, current_distance, 'Distance'), (t, covariance, 'Covariance')]
+            elif graph_name == 'GPS Uncertainty':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_gps_position')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data = ['t']
+                data_dict = {'eph':'Horizontal position accuracy [m]', 
+                             'epv':'Vertical position accuracy [m]',
+                             'satellites_used': 'Num Satellites used',
+                             'fix_type':'GPS fix'}
+                for index, label in data_dict.items():
+                    data.append((t, self.mainwindow.log_data_list[data_index].data['eph'], label))
+            elif graph_name == 'GPS noise and jamming':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_gps_position')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                noise_per_ms = self.mainwindow.log_data_list[data_index].data['noise_per_ms']
+                jamming_indicator = self.mainwindow.log_data_list[data_index].data['jamming_indicator']
+                data = ['t', (t, noise_per_ms, 'Noise per ms'), (t, jamming_indicator, 'Jamming Indicator')]
+            elif graph_name == 'CPU & RAM':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('cpuload')
+                x1 = self.mainwindow.log_data_list[data_index].data['load']
+                x2 = self.mainwindow.log_data_list[data_index].data['ram_usage']
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                data = ['t', (t, x1, 'CPU'), (t, x2, 'Ram usage')]
+            elif graph_name == 'Power':
+                data_index = list(list(self.mainwindow.data_dict.keys())).index('battery_status')
+                t = self.mainwindow.log_data_list[data_index].data['timestamp']
+                v = self.mainwindow.log_data_list[data_index].data['voltage_v']
+                data = ['t', (t, v, 'Votage(V)')]
+            
+            self.sigChecked.emit((graph_name, data))
+            
+    def closeEvent(self, *args, **kwargs):
+        self.closed.emit(True)
+        return QtGui.QMainWindow.closeEvent(self, *args, **kwargs)
+            
+class HelpWin(QtGui.QMainWindow):
+    closed = pyqtSignal(bool)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setFixedSize(QtCore.QSize(600, 400))
+        w = QtGui.QWidget()
+        self.setCentralWidget(w)
+        vlayout = QtGui.QVBoxLayout()
+        w.setLayout(vlayout)
+        self.htmlView = QtWidgets.QTextBrowser(self)
+        font = QtGui.QFont()
+        font.setFamily('Arial')
+        self.htmlView.setReadOnly(True)
+        self.htmlView.setFont(font)
+        self.htmlView.setOpenExternalLinks(True)
+        self.htmlView.setObjectName('Help information')
+        html_help_path = get_source_name('docs/help.html')
+        ret = self.htmlView.setSource(QtCore.QUrl(html_help_path))
+        print('load result:', ret)
+#         self.htmlView.append(ret)
+        vlayout.addWidget(self.htmlView)
+    
+    def closeEvent(self, *args, **kwargs):
+        self.closed.emit(True)
+        return QtGui.QMainWindow.closeEvent(self, *args, **kwargs)
 
 class QuadrotorWin(QtGui.QMainWindow):
     closed = pyqtSignal(bool)
@@ -200,10 +670,13 @@ class QuadrotorWin(QtGui.QMainWindow):
     def __init__(self,*args,**kwargs):
         super(QuadrotorWin,self).__init__(*args,**kwargs)
         self.toolBar = self.addToolBar('showSetting')
-        self.trace_show = QtGui.QAction(QtGui.QIcon(get_source_name('icons/trace.gif')),'show trace',self)
+        self.trace_show = QtGui.QAction(QtGui.QIcon(get_source_name('icons/trace.gif')),
+                                        'show trace',
+                                        self)
         self.trace_show.triggered.connect(self.callback_show_trace)
         self.trace_showed = False
-        self.vector_show = QtGui.QAction(QtGui.QIcon(get_source_name('icons/rotor_vector.gif')),'show rotation speed vector',self)
+        self.vector_show = QtGui.QAction(QtGui.QIcon(get_source_name('icons/rotor_vector.gif')),
+                                         'show rotation speed vector',self)
         self.vector_show.triggered.connect(self.callback_show_vector)
         self.vector_showed = False
         self.toolBar.addAction(self.trace_show)
@@ -611,7 +1084,7 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         try:
             pos,attitude,output = state
             self.drone_position_history.append(self.drone_position)
-            self.drone_position = pos
+            self.drone_position = [pos[0], pos[1], -pos[2]]
             self.drone_angles = attitude
             self.drone_motors_speed = output
             self.update()
