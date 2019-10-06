@@ -862,8 +862,9 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
         self.update()
     
     def setScale(self,scale_size):
+        _, y = scale_size.x(), scale_size.y()
         if self.eye_R > 5:
-            self.eye_R += self.scale_ratio * scale_size
+            self.eye_R += self.scale_ratio * y
             self.update() 
         
     def setMovement(self,dxdy):
@@ -934,7 +935,7 @@ class QuadrotorWidget(QtOpenGL.QGLWidget):
     
     def wheelEvent(self, event):
         # scale the scene
-        self.setScale(event.delta())
+        self.setScale(event.angleDelta())
 
     def normalizeAngle(self, angle):
         while angle < 0:
