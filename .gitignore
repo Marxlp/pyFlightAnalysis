@@ -7,3 +7,4 @@ build/
 dist/
 *.log
 pyFlightAnalysis.egg-info/
+src/config.txt

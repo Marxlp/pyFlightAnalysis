@@ -523,11 +523,14 @@ class AnalysisGraphWin(QtGui.QMainWindow):
                 data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position')
                 x = self.mainwindow.log_data_list[data_index].data[data_name]
                 t = self.mainwindow.log_data_list[data_index].data['timestamp']
-                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position_setpoint')
-                x_setpoint = self.mainwindow.log_data_list[data_index].data[data_name]
-                t_x_setpoint = self.mainwindow.log_data_list[data_index].data['timestamp']
-                data = ['t', (t, x, graph_name + ' Estimated'),
-                        (t_x_setpoint, x_setpoint, graph_name + ' Setpoint')]
+                data = ['t', (t, x, graph_name + ' Estimated')]
+                try:
+                    data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position_setpoint')
+                    x_setpoint = self.mainwindow.log_data_list[data_index].data[data_name]
+                    t_x_setpoint = self.mainwindow.log_data_list[data_index].data['timestamp']
+                    data.append((t_x_setpoint, x_setpoint, graph_name + ' Setpoint'))
+                except:
+                    pass
                 
             elif graph_name == 'Velocity':
                 data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position')
@@ -535,17 +538,21 @@ class AnalysisGraphWin(QtGui.QMainWindow):
                 vy = self.mainwindow.log_data_list[data_index].data['vy']
                 vz = self.mainwindow.log_data_list[data_index].data['vz']
                 t = self.mainwindow.log_data_list[data_index].data['timestamp']
-                data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position_setpoint')
-                vx_setpoint = self.mainwindow.log_data_list[data_index].data['vx']
-                vy_setpoint = self.mainwindow.log_data_list[data_index].data['vy']
-                vz_setpoint = self.mainwindow.log_data_list[data_index].data['vz']
-                t_setpoint = self.mainwindow.log_data_list[data_index].data['timestamp'] 
-                data = ['t',(t, vx, 'VX'),
-                        (t, vy, 'VY'),
-                        (t, vz, 'VZ'), 
-                        (t_setpoint, vx_setpoint, 'VX setpoint'),
-                        (t_setpoint, vy_setpoint, 'VY setpoint'),
-                        (t_setpoint, vz_setpoint, 'VZ setpoint')]
+                data = ['t', 
+                        (t, vx, 'VX'),
+                        (t, vy, 'VY'), 
+                        (t, vz, 'VZ')]
+                try:
+                    data_index = list(list(self.mainwindow.data_dict.keys())).index('vehicle_local_position_setpoint')
+                    vx_setpoint = self.mainwindow.log_data_list[data_index].data['vx']
+                    vy_setpoint = self.mainwindow.log_data_list[data_index].data['vy']
+                    vz_setpoint = self.mainwindow.log_data_list[data_index].data['vz']
+                    t_setpoint = self.mainwindow.log_data_list[data_index].data['timestamp'] 
+                    data.extend([(t_setpoint, vx_setpoint, 'VX setpoint'),
+                            (t_setpoint, vy_setpoint, 'VY setpoint'),
+                            (t_setpoint, vz_setpoint, 'VZ setpoint')])
+                except:
+                    pass
                 
             elif graph_name == 'Manual Control Input':
                 # not compatible to other format
