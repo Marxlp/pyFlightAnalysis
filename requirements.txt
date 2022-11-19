@@ -1,4 +1,6 @@
-numpy >= 1.0.0
-PyOpenGL >= 3.1.0
-pyqtgraph >= 0.10.0
-matplotlib >= 2.1.0
+numpy >= 1.23.4
+PyOpenGL >= 3.1.6
+pyqtgraph >= 0.13.1
+matplotlib >= 3.6.2
+pyulog >= 1.0.0
+pyQt5 >= 5.15.7
